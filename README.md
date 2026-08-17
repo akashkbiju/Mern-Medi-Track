@@ -34,6 +34,41 @@ The interface is built with a modern, clean, and professional healthcare SaaS ae
 ## Project Architecture
 This project follows a Monorepo-like structure containing both the frontend and backend in separate folders.
 
+## Database Architecture
+MongoDB is used as the primary database. Mongoose is used for schema modeling, relationship mapping, and strict data validation.
+
+### Main Collections / Models
+- **User**: Stores patient, doctor, and admin accounts.
+- **Medicine**: Stores medication schedules and details for users.
+- **MedicationLog**: Tracks every individual scheduled dose (taken, missed, pending).
+- **HealthRecord**: Stores daily health measurements like weight, BP, and blood sugar.
+- **DoctorProfile**: Stores verified public information for doctors.
+- **DoctorPatientConnection**: Manages access permissions between doctors and patients.
+- **HealthReport**: Tracks generated PDF health reports.
+- **Notification**: Stores system and medication alerts.
+
+### Important Relationships
+```text
+User
+├── Medicines
+├── Medication Logs
+├── Health Records
+├── Notifications
+├── Health Reports
+└── Doctor Connections
+
+Medicine
+└── Medication Logs
+
+Doctor
+└── Doctor-Patient Connections
+```
+
+### Privacy Considerations
+- **Password Security**: Passwords are required but will be encrypted with bcrypt (never stored in plaintext).
+- **Access Control**: Health records and medications are strictly referenced by the user ID. They are not publicly exposed. Doctor-patient connections use explicit permission structures to grant access.
+- **Data Integrity**: Measurement fields are strictly typed to prevent negative values, and role-based structures prevent arbitrary privilege escalation.
+
 ## Folder Structure
 ```
 meditrack-plus/
