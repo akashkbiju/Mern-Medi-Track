@@ -5,6 +5,20 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000,
 });
+
+/**
+ * Health check helper to verify frontend-to-backend communication
+ */
+export const checkApiHealth = async () => {
+  try {
+    const response = await api.get('/health');
+    return response.data;
+  } catch (error) {
+    console.warn('[API Health Check] Backend health endpoint not reachable:', error.message);
+    return null;
+  }
+};
 
 export default api;
