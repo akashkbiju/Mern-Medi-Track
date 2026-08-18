@@ -25,14 +25,79 @@ Managing medications and monitoring personal health metrics can be challenging f
 - **Frontend**: React.js, Vite, Tailwind CSS, React Router, Axios, Recharts, Lucide React
 - **Backend**: Node.js, Express.js
 - **Database**: MongoDB, Mongoose
-- **Authentication**: JWT, bcrypt *(Future implementation)*
-- **Configuration**: dotenv, CORS
+- **Security & Reliability**: Helmet, Express Rate Limit, Express Validator, CORS
+- **Authentication**: JWT, bcrypt *(Future implementation in Step 4)*
+- **Configuration**: dotenv
 
-## UI/UX Design
-The interface is built with a modern, clean, and professional healthcare SaaS aesthetic. It uses a consistent color system prioritizing deep navy, teal, and functional feedback colors (green/amber/red).
+## Backend Architecture
+The backend follows an enterprise layered architecture with strict separation of concerns:
 
-## Project Architecture
-This project follows a Monorepo-like structure containing both the frontend and backend in separate folders.
+```
+Client (Browser / React)
+  ↓
+Routes (/api/*)
+  ↓
+Middleware (Security headers, CORS, Rate Limit, Input Validation, Auth Foundation)
+  ↓
+Controllers (HTTP parsing, validation inspection, response formatting)
+  ↓
+Services (Business logic, orchestration, calculations)
+  ↓
+Models (Mongoose Schemas & DB validation constraints)
+  ↓
+MongoDB Database
+```
+
+### Response Flow:
+```
+MongoDB Database → Models → Services → Controllers → Standardized ApiResponse → Client
+```
+
+## API Structure
+
+| Endpoint Group | Route Base | Current Status | Description |
+| :--- | :--- | :--- | :--- |
+| **Health Check** | `/api/health` | **Implemented** | Live uptime, environment, and DB connectivity status |
+| **Authentication** | `/api/auth` | *Foundation Ready (Step 4)* | Register, Login, Token generation & session |
+| **User Management** | `/api/users` | *Foundation Ready* | User profile retrieval and management |
+| **Medicines** | `/api/medicines` | *Foundation Ready* | Medication schedule CRUD and active prescriptions |
+| **Reminders** | `/api/reminders` | *Foundation Ready* | Reminder scheduling and dose status logging |
+| **Health Records** | `/api/health-records`| *Foundation Ready* | Tracking vitals (BP, glucose, heart rate, weight) |
+| **Analytics** | `/api/analytics` | *Foundation Ready* | Adherence percentage and health metric trends |
+| **Reports** | `/api/reports` | *Foundation Ready* | Automated health summary PDF generation |
+| **Doctors** | `/api/doctors` | *Foundation Ready* | Doctor discovery, verification, and patient sharing |
+
+*Note: All placeholder endpoints return HTTP `501 Not Implemented` with standardized JSON error envelopes until their designated implementation step.*
+
+## Error Handling & Response Format
+
+The backend enforces a consistent JSON response envelope for all API endpoints.
+
+### Success Response Envelope (`ApiResponse.js`)
+```json
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": { ... }
+}
+```
+
+### Error Response Envelope (`ApiError.js` & `errorMiddleware.js`)
+```json
+{
+  "success": false,
+  "message": "Error description message",
+  "errors": [ ... ]
+}
+```
+
+The global error handling middleware automatically intercepts:
+- **`ApiError`**: Operational errors with specific HTTP status codes
+- **Mongoose `ValidationError`**: Formats readable schema validation errors
+- **Mongoose `CastError`**: Converts malformed MongoDB IDs into clean 404 responses
+- **Mongoose Duplicate Key (`11000`)**: Converts duplicate unique fields into clean 409 Conflict responses
+- **Malformed JSON**: Catches invalid payload syntax with 400 Bad Request
+- **Production Guard**: Suppresses internal stack traces and database credentials in production environments
 
 ## Database Architecture
 MongoDB is used as the primary database. Mongoose is used for schema modeling, relationship mapping, and strict data validation.
@@ -64,74 +129,60 @@ Doctor
 └── Doctor-Patient Connections
 ```
 
-### Privacy Considerations
-- **Password Security**: Passwords are required but will be encrypted with bcrypt (never stored in plaintext).
-- **Access Control**: Health records and medications are strictly referenced by the user ID. They are not publicly exposed. Doctor-patient connections use explicit permission structures to grant access.
-- **Data Integrity**: Measurement fields are strictly typed to prevent negative values, and role-based structures prevent arbitrary privilege escalation.
-
 ## Folder Structure
 ```
 meditrack-plus/
-├── frontend/       # Frontend React/Vite application
+├── frontend/                     # Frontend React/Vite application
 │   ├── public/
-│   └── src/        # React components, pages, and services
-└── backend/        # Backend Express/Node application
-    ├── config/     # Database and other configuration
-    ├── controllers/# API logic
-    ├── middleware/ # Express middlewares
-    ├── models/     # Mongoose schemas
-    └── routes/     # API endpoints
+│   └── src/
+│       ├── components/           # Reusable UI components
+│       ├── layouts/              # Dashboard layout shells
+│       ├── pages/                # LandingPage, Login, Register, Dashboard
+│       └── services/             # Axios API client (with dev health check)
+└── backend/                      # Backend Express/Node application
+    ├── config/                   # env.js, db.js
+    ├── controllers/              # HTTP handling (health, auth, medicine, etc.)
+    ├── middleware/               # error, notFound, rateLimit, validate, auth
+    ├── models/                   # 8 Mongoose schemas from Step 2
+    ├── routes/                   # Express routers (/api/health, /api/auth, etc.)
+    ├── services/                 # Business logic foundation layer
+    ├── utils/                    # ApiResponse, ApiError, asyncHandler, logger
+    ├── validators/               # Request validation schemas (express-validator)
+    ├── app.js                    # Express app configuration & middleware pipeline
+    ├── server.js                 # HTTP listener & startup orchestrator
+    ├── .env                      # Environment configuration
+    └── package.json
 ```
 
-## Installation
-1. Clone the repository
-2. Install root dependencies:
+## Installation & Running
+
+1. **Install Root & Subproject Dependencies**:
    ```bash
    npm install
+   cd frontend && npm install
+   cd ../backend && npm install
    ```
-3. Install frontend dependencies:
+
+2. **Environment Variables**:
+   Verify `backend/.env` is configured:
+   ```env
+   PORT=5000
+   MONGODB_URI=your_mongodb_connection_string
+   CLIENT_URL=http://localhost:5173
+   JWT_SECRET=your_jwt_secret
+   ```
+
+3. **Running the Project**:
+   From the root directory:
    ```bash
-   cd frontend
-   npm install
+   npm run dev
    ```
-4. Install backend dependencies:
+   Or independently:
+   - Backend: `cd backend && npm run dev`
+   - Frontend: `cd frontend && npm run dev`
+
+4. **API Health Check**:
+   Navigate to or curl:
    ```bash
-   cd ../backend
-   npm install
+   curl http://localhost:5000/api/health
    ```
-
-## Environment Variables
-Create a `.env` file in the `backend` directory by copying `.env.example`:
-```
-PORT=5000
-MONGODB_URI=your_mongodb_connection_string
-CLIENT_URL=http://localhost:5173
-JWT_SECRET=your_jwt_secret
-```
-
-## Running the Project
-From the root directory, you can run both frontend and backend concurrently:
-```bash
-npm run dev
-```
-
-Alternatively, run them separately:
-- **Frontend**: `cd frontend && npm run dev`
-- **Backend**: `cd backend && npm run dev`
-
-## API Health Check
-You can test if the backend server is running correctly by navigating to:
-`http://localhost:5000/api/health`
-
-## GitHub Workflow
-The project is maintained on GitHub. Frontend and backend may have separate development branches as needed.
-
-## Future Enhancements
-- User Authentication & Authorization (JWT)
-- Real database integration and dynamic medicine CRUD
-- Intelligent medication reminder engine
-- Dynamic adherence calculation based on tracked data
-- Doctor connectivity features
-- Health reports PDF generation
-- AI-based health trend insights
-- Prescription OCR
