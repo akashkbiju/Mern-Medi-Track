@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, 'Please add a password'],
+      select: false,
     },
     role: {
       type: String,
@@ -49,8 +50,6 @@ const userSchema = new mongoose.Schema(
 );
 
 // Indexes
-// Email should be highly optimized since it's used for login
-userSchema.index({ email: 1 });
 // Role index to quickly find doctors or admins
 userSchema.index({ role: 1 });
 

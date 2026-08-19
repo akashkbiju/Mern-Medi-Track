@@ -58,7 +58,7 @@ MongoDB Database → Models → Services → Controllers → Standardized ApiRes
 | Endpoint Group | Route Base | Current Status | Description |
 | :--- | :--- | :--- | :--- |
 | **Health Check** | `/api/health` | **Implemented** | Live uptime, environment, and DB connectivity status |
-| **Authentication** | `/api/auth` | *Foundation Ready (Step 4)* | Register, Login, Token generation & session |
+| **Authentication** | `/api/auth` | **Registration Implemented** | Register (Step 4), Login & JWT (Step 5) |
 | **User Management** | `/api/users` | *Foundation Ready* | User profile retrieval and management |
 | **Medicines** | `/api/medicines` | *Foundation Ready* | Medication schedule CRUD and active prescriptions |
 | **Reminders** | `/api/reminders` | *Foundation Ready* | Reminder scheduling and dose status logging |
@@ -67,7 +67,51 @@ MongoDB Database → Models → Services → Controllers → Standardized ApiRes
 | **Reports** | `/api/reports` | *Foundation Ready* | Automated health summary PDF generation |
 | **Doctors** | `/api/doctors` | *Foundation Ready* | Doctor discovery, verification, and patient sharing |
 
-*Note: All placeholder endpoints return HTTP `501 Not Implemented` with standardized JSON error envelopes until their designated implementation step.*
+*Note: Endpoints not yet built return HTTP `501 Not Implemented` with standardized JSON error envelopes.*
+
+## User Registration (`POST /api/auth/register`)
+
+MediTrack+ enforces a strict, multi-layered security model for user onboarding:
+- **Role Control**: Public registration strictly creates accounts with `role: "patient"`. Doctor and admin privileges cannot be granted through public registration and are sanitized on the server.
+- **Password Security**: Passwords must meet policy criteria (8+ characters, uppercase, lowercase, numeric digit, special character). Passwords are hashed with `bcryptjs` (salt work factor: 12) prior to storage in MongoDB.
+- **Privacy by Default**: The `password` field in `User` schema has `select: false`. Passwords and password hashes are never returned in API responses or written to logs.
+- **Duplicate Protection**: Email addresses are normalized (trimmed and lowercased). The system checks for existing accounts before saving and returns HTTP 409 Conflict if duplicate.
+- **Rate Limiting**: Protected by dedicated `authLimiter` allowing 20 requests / 15 minutes to prevent automated abuse.
+
+### Request Body
+```json
+{
+  "fullName": "Jane Doe",
+  "email": "jane@example.com",
+  "password": "SecurePassword@123",
+  "confirmPassword": "SecurePassword@123",
+  "phone": "+1234567890"
+}
+```
+
+### Successful Response (`HTTP 201 Created`)
+```json
+{
+  "success": true,
+  "message": "Account created successfully",
+  "data": {
+    "user": {
+      "id": "664b1f48c3f4e2401f7...",
+      "fullName": "Jane Doe",
+      "email": "jane@example.com",
+      "role": "patient",
+      "phone": "+1234567890",
+      "createdAt": "2026-09-06T00:00:00.000Z"
+    }
+  }
+}
+```
+
+### Possible Errors
+- **`HTTP 400 Bad Request`**: Validation failure (missing fields, weak password, password mismatch, invalid email format).
+- **`HTTP 409 Conflict`**: Account with the specified email already exists.
+- **`HTTP 429 Too Many Requests`**: Rate limit exceeded (20 requests / 15 min).
+- **`HTTP 503 Service Unavailable`**: MongoDB service temporarily unreachable.
 
 ## Error Handling & Response Format
 
