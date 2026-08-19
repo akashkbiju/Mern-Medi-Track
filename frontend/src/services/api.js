@@ -21,4 +21,13 @@ export const checkApiHealth = async () => {
   }
 };
 
+/**
+ * Register a new patient account
+ * @param {Object} userData - { fullName, email, password, confirmPassword, phone }
+ */
+export const registerUser = async (userData) => {
+  const response = await api.post('/auth/register', userData);
+  return response.data;
+};
+
 export default api;
