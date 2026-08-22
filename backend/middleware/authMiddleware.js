@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import { verifyToken } from '../utils/jwt.js';
 import { ApiError } from '../utils/ApiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { authorizeRoles } from './roleMiddleware.js';
 
 /**
  * Protect middleware: Verifies JWT token and attaches authenticated user to req.user
@@ -61,19 +62,5 @@ export const protect = asyncHandler(async (req, res, next) => {
   }
 });
 
-/**
- * Role-based Authorization Middleware Foundation (Activated in Step 6)
- */
-export const authorizeRoles = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      throw new ApiError(
-        403,
-        `Role (${req.user?.role || 'unknown'}) is not authorized to access this resource.`
-      );
-    }
-    next();
-  };
-};
-
+export { authorizeRoles };
 export default { protect, authorizeRoles };

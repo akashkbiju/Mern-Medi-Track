@@ -159,6 +159,28 @@ JWT_SECRET=your_long_random_secret_key
 JWT_EXPIRES_IN=1d
 ```
 
+## Authentication & Authorization (RBAC)
+
+MediTrack+ enforces a layered access control architecture on both frontend and backend:
+
+### 1. Verification vs Authorization (HTTP 401 vs 403)
+- **`HTTP 401 Unauthorized`**: Request is missing a token, has an expired token, or token signature is invalid. Means: *You are not authenticated.*
+- **`HTTP 403 Forbidden`**: User is authenticated and active, but does not have the required role to access the resource, or account is disabled (`isActive: false`). Means: *Authenticated, but not permitted.*
+
+### 2. Backend Middleware Flow
+```text
+Request → protect (verify JWT & fetch user from DB) → authorizeRoles(...roles) → Controller
+```
+- **`protect`**: Reads Bearer token from header or cookie, verifies signature, confirms active user in DB, and populates `req.user`.
+- **`authorizeRoles('patient', 'doctor', 'admin')`**: Reusable role guard verifying `req.user.role`.
+
+### 3. Resource Ownership Principle
+User-specific data operations strictly bind to `req.user.id` extracted from the cryptographically verified JWT payload. Roles cannot be modified via client request bodies.
+
+### 4. Frontend Route Protection
+- **`ProtectedRoute`**: Blocks unauthenticated visitors, checks initialization state, and redirects to `/login`.
+- **`RoleRoute`**: Verifies role permissions for authenticated users and navigates unauthorized users to the `/unauthorized` access denied screen.
+
 ## Error Handling & Response Format
 
 The backend enforces a consistent JSON response envelope for all API endpoints.

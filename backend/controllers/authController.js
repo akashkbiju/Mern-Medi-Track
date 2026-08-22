@@ -59,4 +59,77 @@ export const getMe = asyncHandler(async (req, res) => {
   );
 });
 
-export default { register, login, logout, getMe };
+/**
+ * Verification Endpoint: Protected Route Test (Any authenticated role)
+ * GET /api/auth/protected-test
+ */
+export const protectedTest = asyncHandler(async (req, res) => {
+  return ApiResponse.success(
+    res,
+    'Authenticated access successful',
+    {
+      userId: req.user.id,
+      role: req.user.role,
+    },
+    200
+  );
+});
+
+/**
+ * Verification Endpoint: Patient Role Test
+ * GET /api/auth/patient-test
+ */
+export const patientTest = asyncHandler(async (req, res) => {
+  return ApiResponse.success(
+    res,
+    'Patient access verified successfully',
+    {
+      userId: req.user.id,
+      role: req.user.role,
+    },
+    200
+  );
+});
+
+/**
+ * Verification Endpoint: Doctor Role Test
+ * GET /api/auth/doctor-test
+ */
+export const doctorTest = asyncHandler(async (req, res) => {
+  return ApiResponse.success(
+    res,
+    'Doctor access verified successfully',
+    {
+      userId: req.user.id,
+      role: req.user.role,
+    },
+    200
+  );
+});
+
+/**
+ * Verification Endpoint: Admin Role Test
+ * GET /api/auth/admin-test
+ */
+export const adminTest = asyncHandler(async (req, res) => {
+  return ApiResponse.success(
+    res,
+    'Admin access verified successfully',
+    {
+      userId: req.user.id,
+      role: req.user.role,
+    },
+    200
+  );
+});
+
+export default {
+  register,
+  login,
+  logout,
+  getMe,
+  protectedTest,
+  patientTest,
+  doctorTest,
+  adminTest,
+};
