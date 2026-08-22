@@ -6,7 +6,20 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000,
+  withCredentials: true,
 });
+
+// Attach Authorization Bearer token to all outgoing requests if present
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('meditrack_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 /**
  * Health check helper to verify frontend-to-backend communication
@@ -27,6 +40,35 @@ export const checkApiHealth = async () => {
  */
 export const registerUser = async (userData) => {
   const response = await api.post('/auth/register', userData);
+  return response.data;
+};
+
+/**
+ * Authenticate user and obtain JWT token
+ * @param {Object} credentials - { email, password }
+ */
+export const loginUser = async (credentials) => {
+  const response = await api.post('/auth/login', credentials);
+  return response.data;
+};
+
+/**
+ * Logout current user session
+ */
+export const logoutUser = async () => {
+  try {
+    const response = await api.post('/auth/logout');
+    return response.data;
+  } catch {
+    return { success: true };
+  }
+};
+
+/**
+ * Retrieve authenticated user profile
+ */
+export const getMe = async () => {
+  const response = await api.get('/auth/me');
   return response.data;
 };
 

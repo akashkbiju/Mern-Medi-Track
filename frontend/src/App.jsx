@@ -6,6 +6,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import DashboardLayout from './layouts/DashboardLayout'
 import { checkApiHealth } from './services/api'
+import { AuthProvider } from './context/AuthContext'
 
 function App() {
   useEffect(() => {
@@ -19,7 +20,8 @@ function App() {
     }
   }, []);
   return (
-    <Routes>
+    <AuthProvider>
+      <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -28,7 +30,8 @@ function App() {
         <Route index element={<Dashboard />} />
         {/* Future routes */}
       </Route>
-    </Routes>
+      </Routes>
+    </AuthProvider>
   )
 }
 
