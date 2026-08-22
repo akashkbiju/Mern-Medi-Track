@@ -21,6 +21,21 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Auto-handle 401 Unauthorized errors (token expiration / invalid credentials)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
+      localStorage.removeItem('meditrack_token');
+      localStorage.removeItem('meditrack_user');
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 /**
  * Health check helper to verify frontend-to-backend communication
  */
