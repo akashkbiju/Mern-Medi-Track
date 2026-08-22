@@ -57,8 +57,7 @@ MongoDB Database → Models → Services → Controllers → Standardized ApiRes
 
 | Endpoint Group | Route Base | Current Status | Description |
 | :--- | :--- | :--- | :--- |
-| **Health Check** | `/api/health` | **Implemented** | Live uptime, environment, and DB connectivity status |
-| **Authentication** | `/api/auth` | **Registration Implemented** | Register (Step 4), Login & JWT (Step 5) |
+| **Authentication** | `/api/auth` | **Implemented** | Register (Step 4), Login & JWT Auth (Step 5) |
 | **User Management** | `/api/users` | *Foundation Ready* | User profile retrieval and management |
 | **Medicines** | `/api/medicines` | *Foundation Ready* | Medication schedule CRUD and active prescriptions |
 | **Reminders** | `/api/reminders` | *Foundation Ready* | Reminder scheduling and dose status logging |
@@ -112,6 +111,53 @@ MediTrack+ enforces a strict, multi-layered security model for user onboarding:
 - **`HTTP 409 Conflict`**: Account with the specified email already exists.
 - **`HTTP 429 Too Many Requests`**: Rate limit exceeded (20 requests / 15 min).
 - **`HTTP 503 Service Unavailable`**: MongoDB service temporarily unreachable.
+
+## User Authentication & JWT Login
+
+MediTrack+ uses JSON Web Tokens (JWT) and bcrypt password verification:
+- **Stateless Tokens**: The backend signs standard JWTs containing minimal payload (`id`, `role`) with an expiration defined by `JWT_EXPIRES_IN` (e.g., `1d`).
+- **Secure Password Verification**: Passwords are authenticated with `bcrypt.compare()`.
+- **Enumeration Prevention**: Generic error message `"Invalid email or password"` (HTTP 401) is returned whether the email is unrecognized or password is wrong.
+- **Account State Verification**: Inactive accounts (`isActive: false`) are denied access with HTTP 403.
+- **Dual Token Transmission**: Supports both `Authorization: Bearer <token>` headers and secure httpOnly cookies.
+- **Session Restoration (`GET /api/auth/me`)**: Validates active JWT and returns the authenticated user profile.
+- **Logout (`POST /api/auth/logout`)**: Clears authentication cookies and terminates client session.
+
+### Login Request (`POST /api/auth/login`)
+```json
+{
+  "email": "jane@example.com",
+  "password": "SecurePassword@123"
+}
+```
+
+### Successful Response (`HTTP 200 OK`)
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "id": "664b1f48c3f4e2401f7...",
+      "fullName": "Jane Doe",
+      "email": "jane@example.com",
+      "role": "patient",
+      "phone": "+1234567890",
+      "createdAt": "2026-09-06T00:00:00.000Z"
+    }
+  }
+}
+```
+
+### Environment Variables
+```env
+PORT=5000
+MONGODB_URI=your_mongodb_connection_string
+CLIENT_URL=http://localhost:5173
+JWT_SECRET=your_long_random_secret_key
+JWT_EXPIRES_IN=1d
+```
 
 ## Error Handling & Response Format
 

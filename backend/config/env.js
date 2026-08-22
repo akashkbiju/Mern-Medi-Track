@@ -22,6 +22,7 @@ export const env = {
   MONGODB_URI: process.env.MONGODB_URI || '',
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
   JWT_SECRET: process.env.JWT_SECRET || 'meditrack_default_jwt_secret_dev',
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d',
   isProduction: process.env.NODE_ENV === 'production',
   isDevelopment: process.env.NODE_ENV !== 'production',
 };

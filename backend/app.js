@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 
 // Middleware
@@ -46,9 +47,10 @@ app.use(
   })
 );
 
-// 3. Body Parsing Middleware
+// 3. Body & Cookie Parsing Middleware
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(cookieParser());
 
 // 4. Rate Limiting Middleware
 app.use('/api', apiLimiter);
