@@ -77,6 +77,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Update authenticated user in memory and localStorage
+   * @param {Object} updatedUser - Updated user payload
+   */
+  const updateUser = (updatedUser) => {
+    setUser((prev) => {
+      const merged = { ...prev, ...updatedUser };
+      localStorage.setItem('meditrack_user', JSON.stringify(merged));
+      return merged;
+    });
+  };
+
   const value = {
     user,
     token,
@@ -84,6 +96,7 @@ export const AuthProvider = ({ children }) => {
     loading,
     login,
     logout,
+    updateUser,
     initializeAuth,
   };
 

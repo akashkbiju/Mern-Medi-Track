@@ -11,8 +11,11 @@ import {
   User,
   LogOut
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = () => {
+  const { logout } = useAuth();
+
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Medicines', href: '#', icon: Pill },
@@ -24,7 +27,7 @@ const Sidebar = () => {
   ];
 
   const secondaryNavigation = [
-    { name: 'Profile', href: '#', icon: User },
+    { name: 'Profile', href: '/profile', icon: User },
     { name: 'Settings', href: '#', icon: Settings },
   ];
 
@@ -60,13 +63,19 @@ const Sidebar = () => {
             </ul>
           </li>
           <li>
-            <div className="text-xs font-semibold leading-6 text-slate-400">Settings</div>
+            <div className="text-xs font-semibold leading-6 text-slate-400">Account</div>
             <ul role="list" className="-mx-2 mt-2 space-y-1">
               {secondaryNavigation.map((item) => (
                 <li key={item.name}>
                   <NavLink
                     to={item.href}
-                    className="group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-slate-300 hover:bg-primary-light hover:text-white"
+                    className={({ isActive }) =>
+                      `group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 ${
+                        isActive && item.href !== '#'
+                          ? 'bg-primary-light text-white'
+                          : 'text-slate-300 hover:bg-primary-light hover:text-white'
+                      }`
+                    }
                   >
                     <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
                     {item.name}
@@ -76,13 +85,14 @@ const Sidebar = () => {
             </ul>
           </li>
           <li className="mt-auto">
-            <Link
-              to="/login"
-              className="group -mx-2 flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-slate-300 hover:bg-red-500/10 hover:text-red-400"
+            <button
+              onClick={logout}
+              type="button"
+              className="w-full text-left group -mx-2 flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-slate-300 hover:bg-red-500/10 hover:text-red-400 transition-colors"
             >
               <LogOut className="h-6 w-6 shrink-0" aria-hidden="true" />
               Logout
-            </Link>
+            </button>
           </li>
         </ul>
       </nav>

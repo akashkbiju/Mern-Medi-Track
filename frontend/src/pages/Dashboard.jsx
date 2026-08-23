@@ -4,6 +4,8 @@ import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
+import { useAuth } from '../context/AuthContext';
+
 // Mock Data
 const healthData = [
   { name: 'Mon', weight: 70, bp: 120 },
@@ -28,10 +30,23 @@ const recentActivity = [
 ];
 
 const Dashboard = () => {
+  const { user } = useAuth();
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const displayName = user?.fullName ? user.fullName.split(' ')[0] : 'there';
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Good Morning, John</h1>
+        <h1 className="text-2xl font-bold text-slate-900">
+          {getGreeting()}, {displayName}
+        </h1>
         <p className="mt-1 text-sm text-slate-500">Here's your health overview for today.</p>
       </div>
 

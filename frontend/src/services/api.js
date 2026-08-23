@@ -80,10 +80,27 @@ export const logoutUser = async () => {
 };
 
 /**
- * Retrieve authenticated user profile
+ * Retrieve authenticated user profile (session check)
  */
 export const getMe = async () => {
   const response = await api.get('/auth/me');
+  return response.data;
+};
+
+/**
+ * Retrieve full user profile
+ */
+export const getUserProfile = async () => {
+  const response = await api.get('/users/profile');
+  return response.data;
+};
+
+/**
+ * Update user profile
+ * @param {Object} data - Profile updates { fullName, phone, dateOfBirth, gender, emergencyContact, profileImage }
+ */
+export const updateUserProfile = async (data) => {
+  const response = await api.put('/users/profile', data);
   return response.data;
 };
 

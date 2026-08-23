@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Unauthorized from './pages/Unauthorized';
 import Dashboard from './pages/Dashboard';
+import Profile from './pages/Profile';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { checkApiHealth } from './services/api';
@@ -31,7 +32,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
 
-        {/* Protected Dashboard Routes */}
+        {/* Protected Dashboard & App Routes */}
         <Route
           path="/dashboard"
           element={
@@ -41,7 +42,17 @@ function App() {
           }
         >
           <Route index element={<Dashboard />} />
-          {/* Future protected sub-routes */}
+        </Route>
+
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Profile />} />
         </Route>
       </Routes>
     </AuthProvider>
