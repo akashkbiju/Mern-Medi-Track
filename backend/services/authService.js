@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
 import { generateToken } from '../utils/jwt.js';
+import { sanitizeUser } from '../utils/sanitizeUser.js';
 
 /**
  * Authentication Service
@@ -46,14 +47,7 @@ export const authService = {
     });
 
     // 5. Return safe user object (omits password and password hash)
-    return {
-      id: newUser._id.toString(),
-      fullName: newUser.fullName,
-      email: newUser.email,
-      role: newUser.role,
-      phone: newUser.phone,
-      createdAt: newUser.createdAt,
-    };
+    return sanitizeUser(newUser);
   },
 
   /**
@@ -98,14 +92,7 @@ export const authService = {
     // 6. Return token and safe user profile (excluding password)
     return {
       token,
-      user: {
-        id: user._id.toString(),
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        phone: user.phone,
-        createdAt: user.createdAt,
-      },
+      user: sanitizeUser(user),
     };
   },
 
@@ -118,14 +105,7 @@ export const authService = {
       throw new ApiError(404, 'User not found');
     }
 
-    return {
-      id: user._id.toString(),
-      fullName: user.fullName,
-      email: user.email,
-      role: user.role,
-      phone: user.phone,
-      createdAt: user.createdAt,
-    };
+    return sanitizeUser(user);
   },
 };
 

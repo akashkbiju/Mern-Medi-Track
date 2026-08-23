@@ -32,12 +32,28 @@ const userSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
+      enum: ['male', 'female', 'other', 'prefer_not_to_say'],
     },
     profileImage: {
       type: String,
+      default: '',
     },
     emergencyContact: {
-      type: String,
+      name: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      relationship: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      phone: {
+        type: String,
+        trim: true,
+        default: '',
+      },
     },
     isActive: {
       type: Boolean,

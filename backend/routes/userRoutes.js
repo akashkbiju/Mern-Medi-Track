@@ -7,16 +7,18 @@ import {
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
+import { validate } from '../middleware/validateMiddleware.js';
+import { updateProfileValidator } from '../validators/userValidator.js';
 
 const router = express.Router();
 
 /**
  * User profile routes (Protected)
  * GET /api/users/profile - Access own profile via req.user.id
- * PUT /api/users/profile - Update own profile
+ * PUT /api/users/profile - Update own profile with strict field validation
  */
 router.get('/profile', protect, getProfile);
-router.put('/profile', protect, updateProfile);
+router.put('/profile', protect, validate(updateProfileValidator), updateProfile);
 
 /**
  * Administrative & User Directory routes

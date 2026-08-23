@@ -181,6 +181,31 @@ User-specific data operations strictly bind to `req.user.id` extracted from the 
 - **`ProtectedRoute`**: Blocks unauthenticated visitors, checks initialization state, and redirects to `/login`.
 - **`RoleRoute`**: Verifies role permissions for authenticated users and navigates unauthorized users to the `/unauthorized` access denied screen.
 
+## User Profile Management
+
+MediTrack+ provides a protected user profile management system adhering to strict resource ownership principles:
+
+### 1. Ownership & Security Foundation
+- **Verified Identity**: Profile operations are bound to `req.user.id` derived from the cryptographically verified JWT. Client-supplied IDs are never trusted.
+- **Immutable Account Fields**: The user's registered `email`, `role`, and `isActive` status cannot be updated via the profile endpoint (`PUT /api/users/profile`), preventing privilege escalation.
+- **Operator Injection Protection**: MongoDB update operators (`$set`, `$unset`, etc.) passed in request payloads are completely ignored. Updates are explicitly whitelisted and mapped.
+- **Data Sanitization**: Internal security fields (`password`, password hashes, MongoDB internal versioning) are systematically stripped via `sanitizeUser.js`.
+
+### 2. Supported Profile Fields
+- **`fullName`**: String (2–100 chars, trimmed).
+- **`phone`**: String (international phone format).
+- **`dateOfBirth`**: ISO8601 Date (must not be a future date).
+- **`gender`**: Enum (`'male'`, `'female'`, `'other'`, `'prefer_not_to_say'`).
+- **`emergencyContact`**: Subdocument:
+  - `name`: String (max 100 chars).
+  - `relationship`: String (max 50 chars).
+  - `phone`: String (valid phone format).
+- **`profileImage`**: String avatar URL or placeholder reference.
+
+### 3. Profile Endpoints
+- **`GET /api/users/profile`**: Returns current authenticated user's profile.
+- **`PUT /api/users/profile`**: Validates input and updates current user's personal info and emergency contact.
+
 ## Error Handling & Response Format
 
 The backend enforces a consistent JSON response envelope for all API endpoints.
