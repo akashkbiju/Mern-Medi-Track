@@ -6,6 +6,7 @@ import Register from './pages/Register';
 import Unauthorized from './pages/Unauthorized';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
+import Medicines from './pages/Medicines';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { checkApiHealth } from './services/api';
@@ -53,6 +54,17 @@ function App() {
           }
         >
           <Route index element={<Profile />} />
+        </Route>
+
+        <Route
+          path="/medicines"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Medicines />} />
         </Route>
       </Routes>
     </AuthProvider>

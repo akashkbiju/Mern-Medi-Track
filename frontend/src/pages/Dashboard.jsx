@@ -1,10 +1,11 @@
+import { useState, useEffect } from 'react';
 import { Pill, BellRing, Activity, FileText, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import StatCard from '../components/dashboard/StatCard';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
 import { useAuth } from '../context/AuthContext';
+import { getMedicines } from '../services/medicineApi';
 
 // Mock Data
 const healthData = [
@@ -31,6 +32,22 @@ const recentActivity = [
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const [activeCount, setActiveCount] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    getMedicines({ status: 'active', limit: 50 })
+      .then((res) => {
+        if (isMounted && res?.data?.medicines) {
+          setActiveCount(res.data.medicines.length);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -53,10 +70,10 @@ const Dashboard = () => {
       {/* Stat Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard 
-          title="Medicines Today" 
-          value="4" 
+          title="Active Medications" 
+          value={activeCount !== null ? String(activeCount) : '0'} 
           icon={Pill}
-          trend={{ value: '1 left', label: 'to take', isPositive: true }}
+          trend={{ value: 'Active', label: 'prescriptions', isPositive: true }}
         />
         <StatCard 
           title="Medication Adherence" 
