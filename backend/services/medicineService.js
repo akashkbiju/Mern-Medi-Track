@@ -23,6 +23,34 @@ export const FREQUENCY_TIMES_MAP = {
 };
 
 /**
+ * Sanitizes a Medicine document into a safe, consistent representation
+ * @param {Object} medicine - Mongoose document or plain object
+ * @returns {Object} Sanitized medicine object
+ */
+export const sanitizeMedicine = (medicine) => {
+  if (!medicine) return null;
+  const raw = typeof medicine.toObject === 'function' ? medicine.toObject() : medicine;
+
+  return {
+    id: (raw._id || raw.id).toString(),
+    user: (raw.user?._id || raw.user || '').toString(),
+    name: raw.name,
+    genericName: raw.genericName || '',
+    dosage: raw.dosage,
+    dosageUnit: raw.dosageUnit,
+    frequency: raw.frequency,
+    times: raw.times || [],
+    startDate: raw.startDate,
+    endDate: raw.endDate || null,
+    instructions: raw.instructions || '',
+    notes: raw.notes || '',
+    isActive: Boolean(raw.isActive),
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+  };
+};
+
+/**
  * Validates frequency and medication times compatibility
  * @param {string} frequency - e.g. 'once_daily', 'twice_daily', 'custom'
  * @param {Array<string>} times - Array of HH:mm strings
@@ -190,7 +218,7 @@ export const validateMedicineData = (data = {}) => {
 };
 
 /**
- * Medicine Service Foundation
+ * Medicine Service
  * Encapsulates CRUD and interaction logic for user medications
  */
 export const medicineService = {
@@ -198,25 +226,180 @@ export const medicineService = {
   validateDateRange,
   normalizeMedicineData,
   validateMedicineData,
+  sanitizeMedicine,
 
-  getAllMedicines: async (userId) => {
-    throw new ApiError(501, 'Medicine list retrieval will be implemented in Step 9');
+  /**
+   * Retrieve all medicines for the authenticated user with optional status and search filtering
+   * @param {string} userId - Authenticated user ID
+   * @param {Object} options - { status, search, page, limit }
+   */
+  getMedicines: async (userId, { status = 'active', search = '', page = 1, limit = 20 } = {}) => {
+    const query = { user: userId };
+
+    // Status filter: 'active' (default), 'inactive', or 'all'
+    if (status === 'active') {
+      query.isActive = true;
+    } else if (status === 'inactive') {
+      query.isActive = false;
+    }
+    // 'all' allows both active and inactive
+
+    // Search filter: case-insensitive match on name or genericName
+    if (typeof search === 'string' && search.trim()) {
+      const sanitized = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { name: { $regex: sanitized, $options: 'i' } },
+        { genericName: { $regex: sanitized, $options: 'i' } },
+      ];
+    }
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (pageNum - 1) * limitNum;
+
+    const [total, medicines] = await Promise.all([
+      Medicine.countDocuments(query),
+      Medicine.find(query)
+        .sort({ isActive: -1, createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum),
+    ]);
+
+    return {
+      medicines: medicines.map(sanitizeMedicine),
+      count: medicines.length,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum) || 1,
+      },
+    };
   },
 
+  /**
+   * Get single medicine by ID with ownership verification
+   * @param {string} userId - Authenticated user ID
+   * @param {string} medicineId - Target medicine ObjectId
+   */
   getMedicineById: async (userId, medicineId) => {
-    throw new ApiError(501, 'Medicine retrieval by ID will be implemented in Step 9');
+    const medicine = await Medicine.findOne({ _id: medicineId, user: userId });
+    if (!medicine) {
+      throw new ApiError(404, 'Medicine not found');
+    }
+    return sanitizeMedicine(medicine);
   },
 
+  /**
+   * Create a new medicine under the authenticated user
+   * @param {string} userId - Authenticated user ID
+   * @param {Object} medicineData - Medicine payload
+   */
   createMedicine: async (userId, medicineData) => {
-    throw new ApiError(501, 'Medicine creation will be implemented in Step 9');
+    const normalized = normalizeMedicineData(medicineData);
+    const validation = validateMedicineData(normalized);
+
+    if (!validation.valid) {
+      throw new ApiError(400, validation.errors[0] || 'Invalid medicine data', validation.errors);
+    }
+
+    // Explicit field assignment prevents mass-assignment vulnerabilities
+    const newMedicine = await Medicine.create({
+      user: userId,
+      name: normalized.name,
+      genericName: normalized.genericName || '',
+      dosage: normalized.dosage,
+      dosageUnit: normalized.dosageUnit,
+      frequency: normalized.frequency,
+      times: normalized.times,
+      startDate: normalized.startDate,
+      endDate: normalized.endDate,
+      instructions: normalized.instructions || '',
+      notes: normalized.notes || '',
+      isActive: true,
+    });
+
+    return sanitizeMedicine(newMedicine);
   },
 
-  updateMedicine: async (userId, medicineId, updateData) => {
-    throw new ApiError(501, 'Medicine update will be implemented in Step 9');
+  /**
+   * Update an existing medicine with ownership verification
+   * @param {string} userId - Authenticated user ID
+   * @param {string} medicineId - Target medicine ObjectId
+   * @param {Object} updateData - Updated fields
+   */
+  updateMedicine: async (userId, medicineId, updateData = {}) => {
+    const medicine = await Medicine.findOne({ _id: medicineId, user: userId });
+    if (!medicine) {
+      throw new ApiError(404, 'Medicine not found');
+    }
+
+    const normalized = normalizeMedicineData(updateData);
+
+    // If frequency or times are being updated, validate their mutual consistency
+    const frequency = normalized.frequency || medicine.frequency;
+    const times = normalized.times && normalized.times.length > 0 ? normalized.times : medicine.times;
+    const scheduleCheck = validateSchedule(frequency, times);
+    if (!scheduleCheck.valid) {
+      throw new ApiError(400, scheduleCheck.error);
+    }
+
+    // If dates are being updated, validate date boundaries
+    const startDate = normalized.startDate || medicine.startDate;
+    const endDate = normalized.endDate !== undefined ? normalized.endDate : medicine.endDate;
+    const dateCheck = validateDateRange(startDate, endDate);
+    if (!dateCheck.valid) {
+      throw new ApiError(400, dateCheck.error);
+    }
+
+    // Explicit field assignment
+    if (normalized.name !== undefined) medicine.name = normalized.name;
+    if (normalized.genericName !== undefined) medicine.genericName = normalized.genericName;
+    if (normalized.dosage !== undefined) medicine.dosage = normalized.dosage;
+    if (normalized.dosageUnit !== undefined) medicine.dosageUnit = normalized.dosageUnit;
+    if (normalized.frequency !== undefined) medicine.frequency = normalized.frequency;
+    if (normalized.times !== undefined) medicine.times = normalized.times;
+    if (normalized.startDate !== undefined) medicine.startDate = normalized.startDate;
+    if (normalized.endDate !== undefined) medicine.endDate = normalized.endDate;
+    if (normalized.instructions !== undefined) medicine.instructions = normalized.instructions;
+    if (normalized.notes !== undefined) medicine.notes = normalized.notes;
+
+    await medicine.save();
+    return sanitizeMedicine(medicine);
   },
 
-  deleteMedicine: async (userId, medicineId) => {
-    throw new ApiError(501, 'Medicine deletion will be implemented in Step 9');
+  /**
+   * Soft-deactivate a medicine (maintains history for future analytics and logs)
+   * @param {string} userId - Authenticated user ID
+   * @param {string} medicineId - Target medicine ObjectId
+   */
+  deactivateMedicine: async (userId, medicineId) => {
+    const medicine = await Medicine.findOne({ _id: medicineId, user: userId });
+    if (!medicine) {
+      throw new ApiError(404, 'Medicine not found');
+    }
+
+    medicine.isActive = false;
+    await medicine.save();
+
+    return sanitizeMedicine(medicine);
+  },
+
+  /**
+   * Reactivate an inactive medicine
+   * @param {string} userId - Authenticated user ID
+   * @param {string} medicineId - Target medicine ObjectId
+   */
+  activateMedicine: async (userId, medicineId) => {
+    const medicine = await Medicine.findOne({ _id: medicineId, user: userId });
+    if (!medicine) {
+      throw new ApiError(404, 'Medicine not found');
+    }
+
+    medicine.isActive = true;
+    await medicine.save();
+
+    return sanitizeMedicine(medicine);
   },
 };
 

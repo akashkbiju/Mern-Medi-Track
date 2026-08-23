@@ -250,6 +250,66 @@ Optimized for high-frequency user-scoped queries:
 - `{ user: 1, endDate: 1 }`: Expiration and renewal tracking.
 - `{ user: 1, name: 1 }`: Scoped medicine lookup without global uniqueness collisions.
 
+## Medicine Management API
+
+The Medicine Management module provides complete CRUD functionality for authenticated patients:
+
+### 1. Endpoints Overview
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| **`GET`** | `/api/medicines` | List user medications with search (`?search=`) and status (`?status=active\|inactive\|all`) |
+| **`POST`** | `/api/medicines` | Create a new medication schedule |
+| **`GET`** | `/api/medicines/:id` | Retrieve medication details by ID (verified ownership) |
+| **`PUT`** | `/api/medicines/:id` | Update medication schedule and details |
+| **`PATCH`** | `/api/medicines/:id/deactivate` | Soft-deactivate a medication (maintains history) |
+| **`PATCH`** | `/api/medicines/:id/activate` | Reactivate an inactive medication |
+
+### 2. Strict Resource Isolation
+Every operation strictly filters by `{ user: req.user.id }`. Attempting to access or mutate another user's medicine returns `HTTP 404 Not Found` without disclosing record existence.
+
+### 3. Creation Payload Example (`POST /api/medicines`)
+```json
+{
+  "name": "Paracetamol",
+  "genericName": "Acetaminophen",
+  "dosage": 500,
+  "dosageUnit": "mg",
+  "frequency": "twice_daily",
+  "times": ["08:00", "20:00"],
+  "startDate": "2026-09-06",
+  "endDate": "2026-09-20",
+  "instructions": "Take after food with water",
+  "notes": "Mild fever and pain management"
+}
+```
+
+### 4. Successful Response (`HTTP 201 Created`)
+```json
+{
+  "success": true,
+  "message": "Medicine created successfully",
+  "data": {
+    "medicine": {
+      "id": "664b1f48c3f4e2401f7...",
+      "user": "664b1e38c3f4e2401f1...",
+      "name": "Paracetamol",
+      "genericName": "Acetaminophen",
+      "dosage": 500,
+      "dosageUnit": "mg",
+      "frequency": "twice_daily",
+      "times": ["08:00", "20:00"],
+      "startDate": "2026-09-06T00:00:00.000Z",
+      "endDate": "2026-09-20T00:00:00.000Z",
+      "instructions": "Take after food with water",
+      "notes": "Mild fever and pain management",
+      "isActive": true,
+      "createdAt": "2026-09-06T00:00:00.000Z"
+    }
+  }
+}
+```
+
 ## Error Handling & Response Format
 
 The backend enforces a consistent JSON response envelope for all API endpoints.
