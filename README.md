@@ -206,6 +206,50 @@ MediTrack+ provides a protected user profile management system adhering to stric
 - **`GET /api/users/profile`**: Returns current authenticated user's profile.
 - **`PUT /api/users/profile`**: Validates input and updates current user's personal info and emergency contact.
 
+## Medicine Data Architecture
+
+MediTrack+ features a production-ready Medicine data architecture designed to support medication tracking, smart reminders, adherence scores, and health analytics.
+
+### 1. Data Model Structure & Ownership
+Every medication schedule belongs strictly to an authenticated user (`user: ObjectId -> User`). Medicines cannot exist without a valid user reference, and ownership is securely resolved on the server using `req.user.id`.
+
+```text
+User (Authenticated)
+│
+└── Medicine
+    ├── Name (e.g. Paracetamol)
+    ├── Generic Name (e.g. Acetaminophen)
+    ├── Dosage (Numeric: 500)
+    ├── Dosage Unit (Enum: mg, g, mcg, ml, tablet, capsule, drop, puff, unit)
+    ├── Frequency (Enum: once_daily, twice_daily, three_times_daily, four_times_daily, custom)
+    ├── Times (Array of 24-hour HH:mm strings, e.g. ["08:00", "20:00"])
+    ├── Start Date (ISO8601 Date)
+    ├── End Date (ISO8601 Date or null for ongoing prescriptions)
+    ├── Instructions (e.g. "Take after food")
+    ├── Notes (Personal patient remarks)
+    └── Active Status (isActive: Boolean for soft archiving)
+```
+
+### 2. Validation & Schedule Rules
+- **Dosage**: Enforced as a positive numeric value (`min: 0.001`, `max: 100000`). Stored independently from unit for precise analytics.
+- **Dosage Units**: Validated against supported medical units: `mg`, `g`, `mcg`, `ml`, `tablet`, `capsule`, `drop`, `puff`, `unit`.
+- **Frequency & Times Correlation**:
+  - `once_daily` requires exactly 1 time.
+  - `twice_daily` requires exactly 2 times.
+  - `three_times_daily` requires exactly 3 times.
+  - `four_times_daily` requires exactly 4 times.
+  - `custom` supports 1 to 12 user-defined times.
+  - Times must follow 24-hour `HH:mm` format with duplicate prevention.
+- **Date Boundaries**: `startDate` is required; `endDate` is optional and validated to ensure `endDate >= startDate`.
+- **Anti-Mass Assignment**: Rejects or ignores client tampering on `user`, `_id`, `createdAt`, and `updatedAt`.
+
+### 3. Database Indexes
+Optimized for high-frequency user-scoped queries:
+- `{ user: 1, isActive: 1 }`: Fast retrieval of active/inactive medicines.
+- `{ user: 1, startDate: 1 }`: Chronological prescription timeline queries.
+- `{ user: 1, endDate: 1 }`: Expiration and renewal tracking.
+- `{ user: 1, name: 1 }`: Scoped medicine lookup without global uniqueness collisions.
+
 ## Error Handling & Response Format
 
 The backend enforces a consistent JSON response envelope for all API endpoints.
