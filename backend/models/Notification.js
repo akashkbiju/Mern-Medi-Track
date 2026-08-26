@@ -45,5 +45,17 @@ const notificationSchema = new mongoose.Schema(
 notificationSchema.index({ user: 1, isRead: 1 });
 // For scheduling notification dispatch
 notificationSchema.index({ scheduledFor: 1 });
+// Compound unique index for medication reminders to guarantee idempotency and prevent duplicates
+notificationSchema.index(
+  { user: 1, relatedMedicine: 1, type: 1, scheduledFor: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      type: 'medication_reminder',
+      relatedMedicine: { $exists: true },
+      scheduledFor: { $exists: true },
+    },
+  }
+);
 
 export default mongoose.model('Notification', notificationSchema);

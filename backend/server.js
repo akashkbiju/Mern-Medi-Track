@@ -3,26 +3,31 @@ import app from './app.js';
 import { env } from './config/env.js';
 import { connectDB } from './config/db.js';
 import { logger } from './utils/logger.js';
+import { startReminderScheduler, stopReminderScheduler } from './services/reminderScheduler.js';
 
 const startServer = async () => {
   // 1. Connect to MongoDB
   await connectDB();
 
-  // 2. Create HTTP Server
+  // 2. Start Background Reminder Scheduler (with initial recovery pass)
+  await startReminderScheduler();
+
+  // 3. Create HTTP Server
   const server = http.createServer(app);
 
   const PORT = env.PORT || 5000;
 
-  // 3. Start Listening
+  // 4. Start Listening
   server.listen(PORT, () => {
     logger.info(`MediTrack+ API Server running in ${env.NODE_ENV} mode`);
     logger.info(`Server URL: http://localhost:${PORT}`);
     logger.info(`Health Endpoint: http://localhost:${PORT}/api/health`);
   });
 
-  // 4. Graceful Shutdown Handlers
+  // 5. Graceful Shutdown Handlers
   const shutdown = (signal) => {
     logger.info(`Received ${signal}. Shutting down gracefully...`);
+    stopReminderScheduler();
     server.close(() => {
       logger.info('HTTP server closed.');
       process.exit(0);

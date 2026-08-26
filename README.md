@@ -371,6 +371,75 @@ MediTrack+ features a high-performance, dynamic medication scheduling engine. In
 }
 ```
 
+## Smart Medication Reminder Engine
+
+MediTrack+ includes an automated, timezone-aware medication reminder engine. Building upon Step 10's schedule service, the reminder engine generates and manages persistent notification events (`type: "medication_reminder"`) with guaranteed database-level idempotency, server restart recovery, and configurable lookahead windows.
+
+### Architecture Flow
+```
+User
+  ↓
+Medicine Configuration (frequency, times, start/end date)
+  ↓
+Step 10 Schedule Service (dynamic on-demand schedule calculation)
+  ↓
+Step 11 Reminder Engine (idempotent notification event generation)
+  ↓
+Notification Record (MongoDB 'Notification' collection)
+  ↓
+Step 12 Medication Tracking (taken/missed dose logs - upcoming)
+  ↓
+Step 18 Notification Delivery Layer (email/push delivery - upcoming)
+```
+
+### Key Capabilities
+- **Guaranteed Idempotency & Duplicate Prevention**: Backed by a compound unique partial MongoDB index on `{ user: 1, relatedMedicine: 1, type: 1, scheduledFor: 1 }`. Multiple scheduler executions, server restarts, or concurrent requests cannot produce duplicate reminders.
+- **Timezone Awareness**: Respects each user's configured IANA timezone (defaults to `"Asia/Kolkata"`), calculating exact UTC timestamps for `scheduledFor` to prevent timezone shift errors.
+- **Background Cron Processing**: Periodically generates reminder events via a lightweight background worker powered by `node-cron` (`REMINDER_CRON_SCHEDULE="* * * * *"`).
+- **Server Restart Recovery**: On startup, an immediate recovery pass catches any reminders that were due during recent server downtime within a controlled window (`REMINDER_RECOVERY_MINUTES=15`), avoiding sudden notification storms.
+- **Strict Separation of Concerns**: Reminder generation only indicates that a reminder was calculated and queued. It does **NOT** mark the dose as taken or missed. *Step 12 will implement medication taken/missed tracking.*
+
+### Reminder Endpoints
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/reminders/today` | Today's medication reminders for authenticated user |
+| `GET` | `/api/reminders/upcoming?hours=24` | Upcoming reminders within configurable lookahead window |
+| `GET` | `/api/reminders` | Query reminder history (filters: `date`, `isRead`, `medicineId`, pagination) |
+| `PATCH` | `/api/reminders/:id/read` | Mark a reminder notification as read |
+| `POST` | `/api/reminders/process` | Trigger reminder synchronization / processing cycle |
+
+### Sample Reminder Response (`HTTP 200 OK`)
+```json
+{
+  "success": true,
+  "message": "Today's medication reminders retrieved successfully",
+  "data": {
+    "count": 2,
+    "reminders": [
+      {
+        "_id": "66db7015a892b130e90c88bc",
+        "user": "66db6bfae8020a40d5bb96f9",
+        "type": "medication_reminder",
+        "title": "Medication Reminder: Metformin",
+        "message": "It's time to take Metformin (500 mg) at 08:00 AM • Take after meals.",
+        "relatedMedicine": {
+          "_id": "66db6bfae8020a40d5bb96fa",
+          "name": "Metformin",
+          "dosage": 500,
+          "dosageUnit": "mg",
+          "instructions": "Take after meals"
+        },
+        "scheduledFor": "2026-09-06T02:30:00.000Z",
+        "isRead": false,
+        "sentAt": null,
+        "createdAt": "2026-09-06T02:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
 ## Error Handling & Response Format
 
 The backend enforces a consistent JSON response envelope for all API endpoints.

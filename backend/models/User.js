@@ -55,6 +55,11 @@ const userSchema = new mongoose.Schema(
         default: '',
       },
     },
+    timezone: {
+      type: String,
+      default: 'Asia/Kolkata',
+      trim: true,
+    },
     isActive: {
       type: Boolean,
       default: true,

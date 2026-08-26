@@ -133,6 +133,101 @@ export const formatTime12h = (time24) => {
   return `${String(hour).padStart(2, '0')}:${minStr} ${ampm}`;
 };
 
+/**
+ * Validate IANA timezone identifier
+ * @param {string} tz - e.g. "Asia/Kolkata", "America/New_York"
+ * @returns {boolean}
+ */
+export const isValidTimezone = (tz) => {
+  if (!tz || typeof tz !== 'string') return false;
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Compute the current date and time formatted in a user's configured timezone
+ * @param {string} [timezone='Asia/Kolkata'] - IANA timezone
+ * @param {Date} [baseDate=new Date()]
+ * @returns {{ dateStr: string, timeStr: string, timezone: string }}
+ */
+export const getUserDateTime = (timezone = 'Asia/Kolkata', baseDate = new Date()) => {
+  const tz = isValidTimezone(timezone) ? timezone : 'Asia/Kolkata';
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(baseDate);
+  const map = {};
+  for (const p of parts) {
+    map[p.type] = p.value;
+  }
+
+  const dateStr = `${map.year}-${map.month}-${map.day}`;
+  const hour = map.hour === '24' ? '00' : map.hour;
+  const timeStr = `${hour}:${map.minute}`;
+
+  return { dateStr, timeStr, timezone: tz };
+};
+
+/**
+ * Combine YYYY-MM-DD date and HH:mm time in a specific timezone into an exact UTC Date object
+ * @param {string} dateStr - YYYY-MM-DD
+ * @param {string} timeStr - HH:mm
+ * @param {string} [timezone='Asia/Kolkata'] - User's IANA timezone
+ * @returns {Date|null}
+ */
+export const combineDateAndTimeToUTC = (dateStr, timeStr, timezone = 'Asia/Kolkata') => {
+  if (!isValidDateString(dateStr)) return null;
+  const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+  if (!timeRegex.test(timeStr)) return null;
+
+  const tz = isValidTimezone(timezone) ? timezone : 'Asia/Kolkata';
+
+  // Construct initial UTC reference guess
+  const [year, month, day] = dateStr.split('-').map((n) => parseInt(n, 10));
+  const [hour, minute] = timeStr.split(':').map((n) => parseInt(n, 10));
+  const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0, 0));
+
+  // Determine the timezone shift at this date/time using Intl
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(utcGuess);
+  const map = {};
+  for (const p of parts) {
+    map[p.type] = p.value;
+  }
+
+  const tzYear = parseInt(map.year, 10);
+  const tzMonth = parseInt(map.month, 10);
+  const tzDay = parseInt(map.day, 10);
+  const tzHour = map.hour === '24' ? 0 : parseInt(map.hour, 10);
+  const tzMinute = parseInt(map.minute, 10);
+
+  const tzDateInUtc = new Date(Date.UTC(tzYear, tzMonth - 1, tzDay, tzHour, tzMinute, 0, 0));
+  const offsetMs = tzDateInUtc.getTime() - utcGuess.getTime();
+
+  return new Date(utcGuess.getTime() - offsetMs);
+};
+
 export default {
   formatDate,
   isValidDateString,
@@ -141,4 +236,8 @@ export default {
   combineDateAndTime,
   compareTimes,
   formatTime12h,
+  isValidTimezone,
+  getUserDateTime,
+  combineDateAndTimeToUTC,
 };
+

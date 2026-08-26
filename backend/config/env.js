@@ -23,6 +23,9 @@ export const env = {
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
   JWT_SECRET: process.env.JWT_SECRET || 'meditrack_default_jwt_secret_dev',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '1d',
+  REMINDER_CRON_SCHEDULE: process.env.REMINDER_CRON_SCHEDULE || '* * * * *',
+  REMINDER_LOOKAHEAD_HOURS: parseInt(process.env.REMINDER_LOOKAHEAD_HOURS || '24', 10),
+  REMINDER_RECOVERY_MINUTES: parseInt(process.env.REMINDER_RECOVERY_MINUTES || '15', 10),
   isProduction: process.env.NODE_ENV === 'production',
   isDevelopment: process.env.NODE_ENV !== 'production',
 };
