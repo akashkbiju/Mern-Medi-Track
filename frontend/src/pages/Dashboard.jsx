@@ -6,7 +6,8 @@ import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../context/AuthContext';
-import { getMedicines, getUpcomingSchedule } from '../services/medicineApi';
+import { getMedicines } from '../services/medicineApi';
+import { getUpcomingReminders } from '../services/reminderApi';
 import DailyMedicationSchedule from '../components/medicine/DailyMedicationSchedule';
 
 // Mock Data for Health Overview chart (Health records implemented in future steps)
@@ -21,14 +22,14 @@ const healthData = [
 ];
 
 const recentActivity = [
-  { id: 1, title: 'Medicine profile synchronized', time: 'Today', type: 'medication' },
-  { id: 2, title: 'Account security verified', time: 'Yesterday', type: 'system' },
+  { id: 1, title: 'Smart reminder engine synchronized', time: 'Today', type: 'reminder' },
+  { id: 2, title: 'Medicine profile synchronized', time: 'Today', type: 'medication' },
 ];
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [activeCount, setActiveCount] = useState(null);
-  const [upcomingDoses, setUpcomingDoses] = useState([]);
+  const [upcomingReminders, setUpcomingReminders] = useState([]);
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
 
   useEffect(() => {
@@ -43,11 +44,11 @@ const Dashboard = () => {
       })
       .catch(() => {});
 
-    // Fetch next 24-hour upcoming medication schedule
-    getUpcomingSchedule()
+    // Fetch next 24-hour upcoming medication reminders from Reminder Engine
+    getUpcomingReminders(24)
       .then((res) => {
-        if (isMounted && res?.data?.schedule) {
-          setUpcomingDoses(res.data.schedule);
+        if (isMounted && res?.data?.reminders) {
+          setUpcomingReminders(res.data.reminders);
         }
       })
       .catch(() => {})
@@ -75,7 +76,7 @@ const Dashboard = () => {
         <h1 className="text-2xl font-bold text-slate-900">
           {getGreeting()}, {displayName}
         </h1>
-        <p className="mt-1 text-sm text-slate-500">Here's your medication and health overview for today.</p>
+        <p className="mt-1 text-sm text-slate-500">Here's your medication and reminder overview for today.</p>
       </div>
 
       {/* Stat Cards */}
@@ -93,10 +94,10 @@ const Dashboard = () => {
           trend={{ value: '+2%', label: 'vs last week', isPositive: true }}
         />
         <StatCard 
-          title="Upcoming Doses (24h)" 
-          value={loadingUpcoming ? '...' : String(upcomingDoses.length)} 
+          title="Upcoming Reminders" 
+          value={loadingUpcoming ? '...' : String(upcomingReminders.length)} 
           icon={BellRing}
-          trend={{ value: `${upcomingDoses.length} pending`, label: 'next 24h', isPositive: true }}
+          trend={{ value: `${upcomingReminders.length} scheduled`, label: 'next 24h', isPositive: true }}
         />
         <StatCard 
           title="Health Records" 
@@ -159,9 +160,9 @@ const Dashboard = () => {
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-slate-900">Next 24 Hours</h2>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                {upcomingDoses.length} upcoming
-              </span>
+              <Link to="/reminders" className="text-xs font-semibold text-secondary hover:underline">
+                View All
+              </Link>
             </div>
 
             {loadingUpcoming ? (
@@ -170,44 +171,55 @@ const Dashboard = () => {
                   <div key={n} className="animate-pulse h-12 bg-slate-100 rounded-lg" />
                 ))}
               </div>
-            ) : upcomingDoses.length === 0 ? (
+            ) : upcomingReminders.length === 0 ? (
               <p className="text-xs text-slate-500 py-4 text-center">
-                No upcoming doses in the next 24 hours.
+                No medication reminders scheduled for the next 24 hours.
               </p>
             ) : (
               <div className="relative border-l border-slate-200 ml-3 space-y-5">
-                {upcomingDoses.slice(0, 5).map((dose, index) => (
-                  <div key={`${dose.medicineId}-${dose.scheduledTime}-${index}`} className="relative pl-5">
-                    <span className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-white bg-primary" />
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-slate-900">{dose.medicineName}</p>
-                        <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
-                          {dose.scheduledTime12h || dose.scheduledTime}
-                        </span>
+                {upcomingReminders.slice(0, 5).map((reminder) => {
+                  const med = reminder.relatedMedicine || {};
+                  const timeFormatted = reminder.scheduledFor
+                    ? new Date(reminder.scheduledFor).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : '--:--';
+                  return (
+                    <div key={reminder._id} className="relative pl-5">
+                      <span className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-white bg-primary" />
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-slate-900">
+                            {med.name || reminder.title}
+                          </p>
+                          <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                            {timeFormatted}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {med.dosage ? `${med.dosage} ${med.dosageUnit || ''}` : reminder.message}
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {dose.dosage} {dose.dosageUnit} {dose.instructions ? `• ${dose.instructions}` : ''}
-                      </p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </Card>
 
-          {/* Quick Access to Medications */}
+          {/* Quick Access to Reminders & Prescriptions */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-2">Prescriptions</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Smart Reminders</h2>
             <p className="text-xs text-slate-500 mb-4">
-              Manage your medications, adjust dosage frequencies, or add new prescriptions.
+              View due reminders, check upcoming schedules, or synchronize your daily dose alerts.
             </p>
-            <Link to="/medicines" className="block">
+            <Link to="/reminders" className="block">
               <button
                 type="button"
                 className="w-full py-2 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition"
               >
-                View Full Medication List
+                Go to Reminders Hub
               </button>
             </Link>
           </Card>

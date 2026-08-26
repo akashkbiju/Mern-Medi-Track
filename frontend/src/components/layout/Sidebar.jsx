@@ -19,7 +19,7 @@ const Sidebar = () => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Medicines', href: '/medicines', icon: Pill },
-    { name: 'Reminders', href: '#', icon: BellRing },
+    { name: 'Reminders', href: '/reminders', icon: BellRing },
     { name: 'Health Tracking', href: '#', icon: Activity },
     { name: 'Analytics', href: '#', icon: BarChart2 },
     { name: 'Health Reports', href: '#', icon: FileText },
