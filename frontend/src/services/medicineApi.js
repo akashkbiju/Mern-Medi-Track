@@ -60,6 +60,43 @@ export const activateMedicine = async (id) => {
   return response.data;
 };
 
+/**
+ * Retrieve today's medication schedule for the current authenticated user
+ */
+export const getTodaySchedule = async () => {
+  const response = await api.get('/medicines/schedule/today');
+  return response.data;
+};
+
+/**
+ * Retrieve daily medication schedule for a specific date (YYYY-MM-DD)
+ * @param {string} [date] - Target date in YYYY-MM-DD format
+ */
+export const getDailySchedule = async (date) => {
+  const params = date ? { date } : {};
+  const response = await api.get('/medicines/schedule/daily', { params });
+  return response.data;
+};
+
+/**
+ * Retrieve upcoming doses within the next 24 hours
+ */
+export const getUpcomingSchedule = async () => {
+  const response = await api.get('/medicines/schedule/upcoming');
+  return response.data;
+};
+
+/**
+ * Retrieve schedule for a specific medicine on a given date
+ * @param {string} id - Medicine ObjectId
+ * @param {string} [date] - Target date in YYYY-MM-DD format
+ */
+export const getMedicineSchedule = async (id, date) => {
+  const params = date ? { date } : {};
+  const response = await api.get(`/medicines/${id}/schedule`, { params });
+  return response.data;
+};
+
 export default {
   getMedicines,
   getMedicine,
@@ -67,4 +104,8 @@ export default {
   updateMedicine,
   deactivateMedicine,
   activateMedicine,
+  getTodaySchedule,
+  getDailySchedule,
+  getUpcomingSchedule,
+  getMedicineSchedule,
 };

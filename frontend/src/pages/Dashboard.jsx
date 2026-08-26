@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Pill, BellRing, Activity, FileText, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Pill, BellRing, Activity, FileText, Clock, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import StatCard from '../components/dashboard/StatCard';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../context/AuthContext';
-import { getMedicines } from '../services/medicineApi';
+import { getMedicines, getUpcomingSchedule } from '../services/medicineApi';
+import DailyMedicationSchedule from '../components/medicine/DailyMedicationSchedule';
 
-// Mock Data
+// Mock Data for Health Overview chart (Health records implemented in future steps)
 const healthData = [
   { name: 'Mon', weight: 70, bp: 120 },
   { name: 'Tue', weight: 70.2, bp: 118 },
@@ -18,24 +20,21 @@ const healthData = [
   { name: 'Sun', weight: 69.3, bp: 120 },
 ];
 
-const todayMedicines = [
-  { id: 1, name: 'Vitamin D', dosage: '1 tablet', time: '8:00 AM', status: 'taken' },
-  { id: 2, name: 'Medicine B', dosage: '1 tablet', time: '1:00 PM', status: 'pending' },
-  { id: 3, name: 'Medicine C', dosage: '1 tablet', time: '8:00 PM', status: 'pending' },
-];
-
 const recentActivity = [
-  { id: 1, title: 'Medicine marked as taken', time: 'Today, 8:02 AM', type: 'medication' },
-  { id: 2, title: 'Weight updated', time: 'Yesterday, 7:30 PM', type: 'health' },
-  { id: 3, title: 'Health report generated', time: 'Yesterday, 6:00 PM', type: 'report' },
+  { id: 1, title: 'Medicine profile synchronized', time: 'Today', type: 'medication' },
+  { id: 2, title: 'Account security verified', time: 'Yesterday', type: 'system' },
 ];
 
 const Dashboard = () => {
   const { user } = useAuth();
   const [activeCount, setActiveCount] = useState(null);
+  const [upcomingDoses, setUpcomingDoses] = useState([]);
+  const [loadingUpcoming, setLoadingUpcoming] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
+
+    // Fetch active medications count
     getMedicines({ status: 'active', limit: 50 })
       .then((res) => {
         if (isMounted && res?.data?.medicines) {
@@ -43,6 +42,18 @@ const Dashboard = () => {
         }
       })
       .catch(() => {});
+
+    // Fetch next 24-hour upcoming medication schedule
+    getUpcomingSchedule()
+      .then((res) => {
+        if (isMounted && res?.data?.schedule) {
+          setUpcomingDoses(res.data.schedule);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (isMounted) setLoadingUpcoming(false);
+      });
 
     return () => {
       isMounted = false;
@@ -64,7 +75,7 @@ const Dashboard = () => {
         <h1 className="text-2xl font-bold text-slate-900">
           {getGreeting()}, {displayName}
         </h1>
-        <p className="mt-1 text-sm text-slate-500">Here's your health overview for today.</p>
+        <p className="mt-1 text-sm text-slate-500">Here's your medication and health overview for today.</p>
       </div>
 
       {/* Stat Cards */}
@@ -82,9 +93,10 @@ const Dashboard = () => {
           trend={{ value: '+2%', label: 'vs last week', isPositive: true }}
         />
         <StatCard 
-          title="Upcoming Reminders" 
-          value="3" 
+          title="Upcoming Doses (24h)" 
+          value={loadingUpcoming ? '...' : String(upcomingDoses.length)} 
           icon={BellRing}
+          trend={{ value: `${upcomingDoses.length} pending`, label: 'next 24h', isPositive: true }}
         />
         <StatCard 
           title="Health Records" 
@@ -96,9 +108,12 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Daily Medication Schedule Widget */}
+          <DailyMedicationSchedule />
+
           {/* Health Overview Chart */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Health Overview</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Health Trends</h2>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={healthData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
@@ -119,44 +134,6 @@ const Dashboard = () => {
               </ResponsiveContainer>
             </div>
           </Card>
-
-          {/* Today's Medication */}
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-900">Today's Medication</h2>
-              <button className="text-sm text-secondary font-medium hover:text-secondary-light">View All</button>
-            </div>
-            <div className="space-y-4">
-              {todayMedicines.map((med) => (
-                <div key={med.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-100">
-                  <div className="flex items-center gap-4">
-                    <div className={`p-2 rounded-full ${med.status === 'taken' ? 'bg-success/20 text-success' : 'bg-warning/20 text-warning'}`}>
-                      <Pill size={20} />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-slate-900">{med.name}</h3>
-                      <p className="text-sm text-slate-500">{med.dosage} • {med.time}</p>
-                    </div>
-                  </div>
-                  <div>
-                    {med.status === 'taken' ? (
-                      <Badge variant="success" className="flex items-center gap-1">
-                        <CheckCircle2 size={12} /> Taken
-                      </Badge>
-                    ) : med.status === 'missed' ? (
-                      <Badge variant="danger" className="flex items-center gap-1">
-                        <AlertCircle size={12} /> Missed
-                      </Badge>
-                    ) : (
-                      <Badge variant="warning" className="flex items-center gap-1">
-                        <Clock size={12} /> Pending
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
         </div>
 
         {/* Right Column - Sidebar Widgets */}
@@ -167,7 +144,7 @@ const Dashboard = () => {
             <div className="mt-4 flex items-end justify-between">
               <div>
                 <p className="text-4xl font-bold">92%</p>
-                <p className="text-sm text-slate-300 mt-1">Excellent adherence</p>
+                <p className="text-sm text-slate-300 mt-1">Good adherence tracking</p>
               </div>
               <div className="h-16 w-16 relative">
                 <svg className="w-full h-full transform -rotate-90">
@@ -178,38 +155,61 @@ const Dashboard = () => {
             </div>
           </Card>
 
-          {/* Upcoming Reminders */}
+          {/* Upcoming Reminders (Live Next 24 Hours) */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Upcoming Reminders</h2>
-            <div className="relative border-l border-slate-200 ml-3 space-y-6">
-              {todayMedicines.map((med, index) => (
-                <div key={med.id} className="relative pl-6">
-                  <span className={`absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-white ${med.status === 'taken' ? 'bg-success' : 'bg-warning'}`} />
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">{med.time}</p>
-                    <p className="text-sm text-slate-500">{med.name} - {med.dosage}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">Next 24 Hours</h2>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                {upcomingDoses.length} upcoming
+              </span>
             </div>
+
+            {loadingUpcoming ? (
+              <div className="space-y-3">
+                {[1, 2].map((n) => (
+                  <div key={n} className="animate-pulse h-12 bg-slate-100 rounded-lg" />
+                ))}
+              </div>
+            ) : upcomingDoses.length === 0 ? (
+              <p className="text-xs text-slate-500 py-4 text-center">
+                No upcoming doses in the next 24 hours.
+              </p>
+            ) : (
+              <div className="relative border-l border-slate-200 ml-3 space-y-5">
+                {upcomingDoses.slice(0, 5).map((dose, index) => (
+                  <div key={`${dose.medicineId}-${dose.scheduledTime}-${index}`} className="relative pl-5">
+                    <span className="absolute -left-[5px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-white bg-primary" />
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-slate-900">{dose.medicineName}</p>
+                        <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                          {dose.scheduledTime12h || dose.scheduledTime}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {dose.dosage} {dose.dosageUnit} {dose.instructions ? `• ${dose.instructions}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </Card>
 
-          {/* Recent Activity */}
+          {/* Quick Access to Medications */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Recent Activity</h2>
-            <div className="space-y-4">
-              {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex gap-4">
-                  <div className="mt-1">
-                    <div className="h-2 w-2 rounded-full bg-slate-300" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-slate-900">{activity.title}</p>
-                    <p className="text-xs text-slate-500">{activity.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Prescriptions</h2>
+            <p className="text-xs text-slate-500 mb-4">
+              Manage your medications, adjust dosage frequencies, or add new prescriptions.
+            </p>
+            <Link to="/medicines" className="block">
+              <button
+                type="button"
+                className="w-full py-2 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition"
+              >
+                View Full Medication List
+              </button>
+            </Link>
           </Card>
         </div>
       </div>
