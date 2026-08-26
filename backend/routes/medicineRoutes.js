@@ -7,6 +7,12 @@ import {
   deactivateMedicine,
   activateMedicine,
 } from '../controllers/medicineController.js';
+import {
+  getTodaySchedule,
+  getDailySchedule,
+  getUpcomingSchedule,
+  getMedicineSchedule,
+} from '../controllers/scheduleController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validateMiddleware.js';
 import {
@@ -14,6 +20,10 @@ import {
   updateMedicineValidator,
   medicineIdValidator,
 } from '../validators/medicineValidator.js';
+import {
+  dateQueryValidator,
+  medicineScheduleValidator,
+} from '../validators/scheduleValidator.js';
 
 const router = express.Router();
 
@@ -22,6 +32,25 @@ const router = express.Router();
  * All routes require authenticated patient/user session
  */
 
+// Schedule Routes (Must precede /:id to prevent routing collisions)
+// GET /api/medicines/schedule/today - Retrieve today's medication schedule
+router.get('/schedule/today', protect, getTodaySchedule);
+
+// GET /api/medicines/schedule/daily?date=YYYY-MM-DD - Retrieve schedule for date
+router.get('/schedule/daily', protect, validate(dateQueryValidator), getDailySchedule);
+
+// GET /api/medicines/schedule/upcoming - Retrieve next 24 hours schedule
+router.get('/schedule/upcoming', protect, getUpcomingSchedule);
+
+// GET /api/medicines/:id/schedule?date=YYYY-MM-DD - Retrieve schedule for specific medicine
+router.get(
+  '/:id/schedule',
+  protect,
+  validate(medicineScheduleValidator),
+  getMedicineSchedule
+);
+
+// Standard Medicine CRUD Routes
 // GET /api/medicines - List user medicines with optional status/search filters
 router.get('/', protect, getMedicines);
 
@@ -47,3 +76,4 @@ router.patch('/:id/deactivate', protect, validate(medicineIdValidator), deactiva
 router.patch('/:id/activate', protect, validate(medicineIdValidator), activateMedicine);
 
 export default router;
+

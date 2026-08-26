@@ -310,6 +310,67 @@ Every operation strictly filters by `{ user: req.user.id }`. Attempting to acces
 }
 ```
 
+## Medication Scheduling System
+
+MediTrack+ features a high-performance, dynamic medication scheduling engine. Instead of generating redundant pre-allocated database entries for every future dose, daily and upcoming schedules are calculated dynamically on demand directly from the `Medicine` model parameters (`frequency`, `times`, `startDate`, `endDate`, and `isActive`).
+
+### Core Features
+- **Dynamic On-Demand Calculation**: Schedules are generated algorithmically at query time, ensuring that any edit to dosage, timing, frequency, or deactivation instantly updates schedules without data inconsistencies.
+- **Date Range Accuracy**: Compares target dates against medication `startDate` and optional `endDate` (supporting indefinite prescriptions).
+- **Chronological Dose Sorting**: Daily doses are ordered chronologically by scheduled time (24h format), with secondary alphabetical ordering by medicine name.
+- **Strict Date Validation**: Validates `YYYY-MM-DD` calendar parameters strictly, catching invalid leap years, out-of-bounds months, and malformed inputs.
+
+### Schedule Endpoints
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/medicines/schedule/today` | Today's complete medication schedule for authenticated user |
+| `GET` | `/api/medicines/schedule/daily?date=YYYY-MM-DD` | Medication schedule for any specific valid date |
+| `GET` | `/api/medicines/schedule/upcoming` | Rolling 24-hour upcoming medication doses |
+| `GET` | `/api/medicines/:id/schedule?date=YYYY-MM-DD` | Scheduled times for a specific medicine on a given date |
+
+### Sample Daily Schedule Response (`HTTP 200 OK`)
+```json
+{
+  "success": true,
+  "message": "Daily medication schedule retrieved successfully",
+  "data": {
+    "date": "2026-09-06",
+    "count": 2,
+    "schedule": [
+      {
+        "medicineId": "66db6bfae8020a40d5bb96fa",
+        "medicineName": "Metformin",
+        "genericName": "Metformin HCl",
+        "dosage": 500,
+        "dosageUnit": "mg",
+        "frequency": "twice_daily",
+        "scheduledDate": "2026-09-06",
+        "scheduledTime": "08:00",
+        "scheduledTime12h": "08:00 AM",
+        "instructions": "Take after meals",
+        "status": "Scheduled",
+        "isActive": true
+      },
+      {
+        "medicineId": "66db6bfae8020a40d5bb96fa",
+        "medicineName": "Metformin",
+        "genericName": "Metformin HCl",
+        "dosage": 500,
+        "dosageUnit": "mg",
+        "frequency": "twice_daily",
+        "scheduledDate": "2026-09-06",
+        "scheduledTime": "20:00",
+        "scheduledTime12h": "08:00 PM",
+        "instructions": "Take after meals",
+        "status": "Scheduled",
+        "isActive": true
+      }
+    ]
+  }
+}
+```
+
 ## Error Handling & Response Format
 
 The backend enforces a consistent JSON response envelope for all API endpoints.
