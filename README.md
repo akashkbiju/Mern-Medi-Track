@@ -440,6 +440,89 @@ Step 18 Notification Delivery Layer (email/push delivery - upcoming)
 }
 ```
 
+## Medication Taken & Missed Tracking
+
+MediTrack+ allows patients to track actual medication adherence by recording whether each scheduled dose was **Pending**, **Taken**, **Missed**, or **Skipped**. The system cleanly separates scheduled dose calculations (Step 10) and reminder alerts (Step 11) from actual dose consumption events.
+
+### Architecture Flow
+```
+User
+  ↓
+Medicine
+  ↓
+Step 10 Schedule Service (dynamic on-demand schedule)
+  ↓
+Step 11 Reminder Engine (alert notification records)
+  ↓
+Step 12 MedicationLog Engine
+  ├── Pending (initial scheduled state)
+  ├── Taken (actual takenAt timestamp + optional patient note)
+  ├── Skipped (patient skipped with reason note)
+  └── Missed (automated after REMINDER_GRACE_MINUTES expiration)
+  ↓
+Step 13 Adherence Analytics (upcoming)
+```
+
+### Key Capabilities
+- **Lazy On-Demand Generation**: Medication logs are generated lazily when accessing daily schedules rather than creating redundant database entries years in advance.
+- **Idempotency & Duplicate Prevention**: Backed by a compound unique MongoDB index on `{ user: 1, medicine: 1, scheduledDate: 1, scheduledTime: 1 }`. Repeated calls or concurrent requests preserve existing log status.
+- **Status State Machine**:
+  - `pending → taken`: Sets `takenAt = new Date()`. Idempotent if re-invoked.
+  - `pending → skipped`: Allows patients to record a reason note without counting as a missed dose.
+  - `pending → missed`: Automated by background scheduler when `Date.now() > scheduledTime + REMINDER_GRACE_MINUTES` (default 60 mins).
+  - `missed → taken`: Supported for late medication taking; records exact `takenAt` while preserving original scheduled time.
+  - `taken` and `skipped` are immutable to automated missed transitions.
+- **Timezone Awareness**: Interprets daily schedules using each user's configured IANA timezone (default `Asia/Kolkata`).
+
+### Medication Log Endpoints
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/medication-logs/today` | Today's medication dose checklist and progress statistics |
+| `GET` | `/api/medication-logs` | Query dose logs history (filters: `date`, `startDate`, `endDate`, `status`, `medicineId`) |
+| `GET` | `/api/medication-logs/:id` | Retrieve a single medication log |
+| `PATCH` | `/api/medication-logs/:id/taken` | Mark a scheduled dose as taken (optional `{ notes }`) |
+| `PATCH` | `/api/medication-logs/:id/skipped` | Mark a scheduled dose as skipped (optional `{ notes }`) |
+| `POST` | `/api/medication-logs/process-missed`| Trigger automated missed dose check |
+
+### Sample Today's Log Response (`HTTP 200 OK`)
+```json
+{
+  "success": true,
+  "message": "Today's medication schedule retrieved successfully",
+  "data": {
+    "date": "2026-09-06",
+    "timezone": "Asia/Kolkata",
+    "stats": {
+      "total": 3,
+      "taken": 1,
+      "pending": 1,
+      "missed": 0,
+      "skipped": 1,
+      "completionRate": 33
+    },
+    "medications": [
+      {
+        "_id": "66db7015a892b130e90c88bc",
+        "user": "66db6bfae8020a40d5bb96f9",
+        "medicine": {
+          "_id": "66db6bfae8020a40d5bb96fa",
+          "name": "Paracetamol",
+          "dosage": 500,
+          "dosageUnit": "mg"
+        },
+        "scheduledDate": "2026-09-06T00:00:00.000Z",
+        "scheduledTime": "08:00",
+        "scheduledTime12h": "08:00 AM",
+        "status": "taken",
+        "takenAt": "2026-09-06T02:35:12.000Z",
+        "notes": "Taken after breakfast"
+      }
+    ]
+  }
+}
+```
+
 ## Error Handling & Response Format
 
 The backend enforces a consistent JSON response envelope for all API endpoints.

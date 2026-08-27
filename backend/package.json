@@ -9,7 +9,8 @@
     "dev": "nodemon server.js",
     "test:medicine": "node tests/medicineModel.test.js",
     "test:schedule": "node tests/scheduleLogic.test.js",
-    "test:reminder": "node tests/reminderEngine.test.js"
+    "test:reminder": "node tests/reminderEngine.test.js",
+    "test:log": "node tests/medicationLog.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

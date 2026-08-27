@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { reminderService } from './reminderService.js';
+import { medicationLogService } from './medicationLogService.js';
 import { env } from '../config/env.js';
 import { logger } from '../utils/logger.js';
 
@@ -36,10 +37,15 @@ export const startReminderScheduler = async () => {
     logger.info(
       `[ReminderScheduler] Executing startup recovery check (Recovery window: ${env.REMINDER_RECOVERY_MINUTES} minutes)...`
     );
-    await reminderService.processScheduledReminders({
-      recoveryMinutes: env.REMINDER_RECOVERY_MINUTES,
-      lookaheadMinutes: 60,
-    });
+    await Promise.all([
+      reminderService.processScheduledReminders({
+        recoveryMinutes: env.REMINDER_RECOVERY_MINUTES,
+        lookaheadMinutes: 60,
+      }),
+      medicationLogService.processMissedMedicationLogs({
+        graceMinutes: env.REMINDER_GRACE_MINUTES,
+      }),
+    ]);
   } catch (startupErr) {
     logger.error(
       `[ReminderScheduler] Error during initial recovery pass: ${startupErr.message}`
@@ -55,10 +61,15 @@ export const startReminderScheduler = async () => {
 
     isProcessing = true;
     try {
-      await reminderService.processScheduledReminders({
-        lookaheadMinutes: 60,
-        recoveryMinutes: env.REMINDER_RECOVERY_MINUTES,
-      });
+      await Promise.all([
+        reminderService.processScheduledReminders({
+          lookaheadMinutes: 60,
+          recoveryMinutes: env.REMINDER_RECOVERY_MINUTES,
+        }),
+        medicationLogService.processMissedMedicationLogs({
+          graceMinutes: env.REMINDER_GRACE_MINUTES,
+        }),
+      ]);
     } catch (cycleErr) {
       logger.error(`[ReminderScheduler] Error in reminder cycle: ${cycleErr.message}`);
     } finally {
