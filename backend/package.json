@@ -10,7 +10,8 @@
     "test:medicine": "node tests/medicineModel.test.js",
     "test:schedule": "node tests/scheduleLogic.test.js",
     "test:reminder": "node tests/reminderEngine.test.js",
-    "test:log": "node tests/medicationLog.test.js"
+    "test:log": "node tests/medicationLog.test.js",
+    "test:adherence": "node tests/adherence.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -640,3 +640,79 @@ meditrack-plus/
    ```bash
    curl http://localhost:5000/api/health
    ```
+
+## Step 13 — Medication Adherence Score & Analytics
+
+MediTrack+ includes a clinical-grade Medication Adherence Score engine designed to accurately measure how consistently a patient adheres to their prescribed medication schedules.
+
+### Core Formula
+$$\text{Adherence Score} = \left( \frac{\text{Taken Eligible Doses}}{\text{Total Eligible Doses}} \right) \times 100$$
+
+> [!IMPORTANT]
+> **Medical Disclaimer**:
+> Medication adherence reflects how consistently scheduled doses were recorded as taken. It is not a medical diagnosis or treatment recommendation.
+
+### Eligible Dose Definition
+The adherence score is calculated strictly from scheduled doses and their actual recorded status in `MedicationLog`:
+- **Taken**: Completed (counted in both numerator and denominator).
+- **Missed**: Not completed (counted in denominator only).
+- **Skipped**: Not completed (counted in denominator only; treated as non-adherent for tracking).
+- **Pending**:
+  - Doses scheduled on past calendar dates are considered elapsed and counted in denominator as non-adherent.
+  - Doses scheduled for today are checked against the configured grace period (`REMINDER_GRACE_MINUTES`, default: 60 minutes). If `scheduledTime + gracePeriod` has passed, it is evaluated as missed. If still within the grace period, it is **excluded from eligible doses**.
+- **Future Doses**: Doses scheduled for later today or future calendar dates are strictly **excluded from eligible doses** and never penalize or reduce the patient's score.
+
+### Score Categories
+- **`Excellent`**: 90% – 100%
+- **`Good`**: 75% – 89.99%
+- **`Needs Improvement`**: 50% – 74.99%
+- **`Low`**: 0% – 49.99%
+- **`No Data`**: When `totalEligible === 0` (score returns `null` and `hasData: false`, clearly distinguishing an empty period from a 0% failure score).
+
+### Adherence Streak
+- Evaluates consecutive days meeting the threshold ($\ge 100\%$ adherence).
+- Days with zero scheduled doses (e.g. rest days or before prescription start) do not automatically break the streak.
+- Today is counted if all scheduled doses are completed at 100%, or bypassed if still in progress without missed doses.
+
+### API Endpoints
+- `GET /api/analytics/adherence?period=today`: Today's adherence score and completed dose ratio.
+- `GET /api/analytics/adherence?period=7d`: Last 7 calendar days aggregate and daily breakdown.
+- `GET /api/analytics/adherence?period=30d`: Last 30 calendar days aggregate and daily breakdown.
+- `GET /api/analytics/adherence?period=custom&startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`: Custom date range (up to 366 days).
+
+#### Example Response (`GET /api/analytics/adherence?period=7d`)
+```json
+{
+  "success": true,
+  "message": "Medication adherence calculated successfully",
+  "data": {
+    "period": "7d",
+    "startDate": "2026-08-31",
+    "endDate": "2026-09-06",
+    "timezone": "Asia/Kolkata",
+    "totalEligible": 21,
+    "taken": 18,
+    "missed": 2,
+    "skipped": 1,
+    "pending": 0,
+    "adherenceScore": 85.71,
+    "category": "Good",
+    "hasData": true,
+    "currentStreak": 3,
+    "daily": [
+      {
+        "date": "2026-08-31",
+        "eligible": 3,
+        "taken": 3,
+        "missed": 0,
+        "skipped": 0,
+        "pending": 0,
+        "score": 100,
+        "category": "Excellent",
+        "hasData": true
+      }
+    ],
+    "disclaimer": "Medication adherence reflects how consistently scheduled doses were recorded as taken. It is not a medical diagnosis."
+  }
+}
+```

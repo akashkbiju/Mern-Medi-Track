@@ -228,6 +228,41 @@ export const combineDateAndTimeToUTC = (dateStr, timeStr, timezone = 'Asia/Kolka
   return new Date(utcGuess.getTime() - offsetMs);
 };
 
+/**
+ * Add or subtract days from a YYYY-MM-DD date string using pure UTC calendar arithmetic
+ * @param {string} dateStr - YYYY-MM-DD
+ * @param {number} days - Positive or negative number of days
+ * @returns {string|null} YYYY-MM-DD
+ */
+export const addDaysToDate = (dateStr, days) => {
+  if (!isValidDateString(dateStr)) return null;
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  date.setUTCDate(date.getUTCDate() + days);
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(date.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/**
+ * Generate an inclusive array of YYYY-MM-DD date strings between start and end dates
+ * @param {string} startDateStr - YYYY-MM-DD
+ * @param {string} endDateStr - YYYY-MM-DD
+ * @returns {Array<string>}
+ */
+export const getDateRangeArray = (startDateStr, endDateStr) => {
+  if (!isValidDateString(startDateStr) || !isValidDateString(endDateStr)) return [];
+  if (startDateStr > endDateStr) return [];
+  const result = [];
+  let curr = startDateStr;
+  while (curr <= endDateStr) {
+    result.push(curr);
+    curr = addDaysToDate(curr, 1);
+  }
+  return result;
+};
+
 export default {
   formatDate,
   isValidDateString,
@@ -239,5 +274,7 @@ export default {
   isValidTimezone,
   getUserDateTime,
   combineDateAndTimeToUTC,
+  addDaysToDate,
+  getDateRangeArray,
 };
 
