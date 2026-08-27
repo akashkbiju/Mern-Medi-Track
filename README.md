@@ -716,3 +716,40 @@ The adherence score is calculated strictly from scheduled doses and their actual
   }
 }
 ```
+
+## Step 14 — Health Records Database & Data Architecture
+
+MediTrack+ includes a robust, validated, and scalable data architecture for tracking vital patient health parameters over time.
+
+### Supported Health Measurements & Standard Units
+- **Weight**: `kg` (Valid physiological range: 1 – 500 kg)
+- **Blood Pressure**: `mmHg` (Systolic: 40 – 300, Diastolic: 30 – 200; Systolic must be strictly greater than Diastolic; both required if blood pressure is supplied)
+- **Blood Sugar**: `mg/dL` (Valid physiological range: 20 – 1000 mg/dL)
+- **Heart Rate**: `BPM` (Valid physiological range: 20 – 300 BPM)
+- **Temperature**: `°C` (Valid physiological range: 25 – 45 °C)
+- **Notes**: Text (Max 1000 characters, trimmed)
+
+### Partial Record & Future Date Rules
+- **Partial Record Flexibility**: A patient is never required to submit all measurements simultaneously. Any combination is valid (e.g. only weight, or only blood pressure, or blood sugar and heart rate).
+- **Measurement Presence Requirement**: At least one valid health measurement must be present. Submitting an empty record with only a timestamp or notes is rejected.
+- **Future Date Prevention**: The `recordDate` cannot be in the future (allowing at most a 5-minute clock-skew tolerance).
+
+> [!IMPORTANT]
+> **Medical Safety Disclaimer**:
+> Health records are stored as tracking data and are not medical diagnoses. They do not replace professional medical advice.
+> 
+> *Note: Step 15 will implement the Health Tracking UI and CRUD workflow.*
+
+### Ownership & Security
+- All health records are strictly scoped to the authenticated patient (`user = req.user.id`).
+- Attempting to pass or override `userId` in `req.body` or queries is discarded.
+- Cross-user queries and mutations return HTTP 404 to avoid leaking record existence.
+- Doctor access is segregated and will be implemented in later steps.
+
+### API Endpoints (`/api/health-records`)
+- `POST /api/health-records`: Create a new health record.
+- `GET /api/health-records?page=1&limit=20&date=YYYY-MM-DD`: Retrieve paginated records (newest first) with optional date or measurement type filtering.
+- `GET /api/health-records/:id`: Fetch a single health record verifying user ownership.
+- `PATCH /api/health-records/:id`: Update allowed measurement fields (rejects mutation of `user`, `_id`, or `createdAt`).
+- `DELETE /api/health-records/:id`: Hard-delete a patient's own record.
+

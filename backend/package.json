@@ -11,7 +11,8 @@
     "test:schedule": "node tests/scheduleLogic.test.js",
     "test:reminder": "node tests/reminderEngine.test.js",
     "test:log": "node tests/medicationLog.test.js",
-    "test:adherence": "node tests/adherence.test.js"
+    "test:adherence": "node tests/adherence.test.js",
+    "test:health": "node tests/healthRecord.test.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

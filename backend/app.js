@@ -11,6 +11,7 @@ import { errorHandler } from './middleware/errorMiddleware.js';
 
 // Route Handlers
 import healthRoutes from './routes/healthRoutes.js';
+import healthRecordRoutes from './routes/healthRecordRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import medicineRoutes from './routes/medicineRoutes.js';
@@ -58,7 +59,7 @@ app.use('/api', apiLimiter);
 
 // 5. API Routing Layer (/api)
 app.use('/api/health', healthRoutes);
-app.use('/api/health-records', healthRoutes);
+app.use('/api/health-records', healthRecordRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/medicines', medicineRoutes);
