@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Pill, BellRing, Activity, FileText, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
+import { Pill, BellRing, Activity, FileText, CheckCircle2, Clock, AlertCircle, Flame, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import StatCard from '../components/dashboard/StatCard';
 import Card from '../components/ui/Card';
@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { getMedicines } from '../services/medicineApi';
 import { getUpcomingReminders } from '../services/reminderApi';
 import { getTodayMedicationLogs } from '../services/medicationLogApi';
+import { getWeeklyAdherence } from '../services/analyticsApi';
 import DailyMedicationSchedule from '../components/medicine/DailyMedicationSchedule';
 
 // Mock Data for Health Overview chart (Health records implemented in future steps)
@@ -27,6 +28,7 @@ const Dashboard = () => {
   const [activeCount, setActiveCount] = useState(null);
   const [upcomingReminders, setUpcomingReminders] = useState([]);
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
+  const [adherenceData, setAdherenceData] = useState(null);
   const [todayLogStats, setTodayLogStats] = useState({
     total: 0,
     taken: 0,
@@ -65,6 +67,15 @@ const Dashboard = () => {
       .then((res) => {
         if (isMounted && res?.data?.stats) {
           setTodayLogStats(res.data.stats);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch 7-day medication adherence summary
+    getWeeklyAdherence()
+      .then((res) => {
+        if (isMounted && res?.data) {
+          setAdherenceData(res.data);
         }
       })
       .catch(() => {});
@@ -156,33 +167,55 @@ const Dashboard = () => {
 
         {/* Right Column - Sidebar Widgets */}
         <div className="space-y-6">
-          {/* Adherence Card */}
-          <Card className="p-6 bg-gradient-to-br from-primary to-primary-light text-white">
+          {/* Medication Adherence Card */}
+          <Card className="p-6 bg-gradient-to-br from-teal-900 via-primary to-primary-light text-white shadow-md">
             <div className="flex items-center justify-between mb-2">
-              <h2 className="text-lg font-semibold">Today's Progress</h2>
-              <Link to="/tracker" className="text-xs text-teal-200 hover:underline">
-                Open Tracker →
+              <h2 className="text-base font-bold">Medication Adherence</h2>
+              <Link to="/adherence" className="text-xs text-teal-200 hover:underline flex items-center gap-1">
+                View Trends →
               </Link>
             </div>
-            <div className="mt-4 flex items-end justify-between">
+            <div className="mt-3 flex items-end justify-between">
               <div>
-                <p className="text-4xl font-bold">{todayLogStats.completionRate}%</p>
-                <p className="text-sm text-slate-200 mt-1">
-                  {todayLogStats.taken} of {todayLogStats.total} doses taken
+                <div className="flex items-baseline gap-2">
+                  <p className="text-3xl font-extrabold tracking-tight">
+                    {adherenceData?.hasData ? `${adherenceData.adherenceScore}%` : 'No Data'}
+                  </p>
+                  {adherenceData?.hasData && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-white/20 text-white">
+                      {adherenceData.category}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-teal-100/90 mt-1">
+                  {adherenceData?.hasData
+                    ? `${adherenceData.taken} / ${adherenceData.totalEligible} doses taken`
+                    : 'No past evaluated doses'}
                 </p>
+                {adherenceData && (
+                  <div className="mt-2.5 flex items-center gap-1.5 text-xs text-amber-300 font-semibold">
+                    <Flame size={14} className="text-amber-300 shrink-0" />
+                    <span>
+                      Current streak: {adherenceData.currentStreak}{' '}
+                      {adherenceData.currentStreak === 1 ? 'day' : 'days'}
+                    </span>
+                  </div>
+                )}
               </div>
-              <div className="h-16 w-16 relative">
+              <div className="h-16 w-16 relative shrink-0">
                 <svg className="w-full h-full transform -rotate-90">
-                  <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.2)" strokeWidth="8" fill="none" />
+                  <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.2)" strokeWidth="6" fill="none" />
                   <circle
                     cx="32"
                     cy="32"
                     r="28"
                     stroke="white"
-                    strokeWidth="8"
+                    strokeWidth="6"
                     fill="none"
                     strokeDasharray="175"
-                    strokeDashoffset={175 - (175 * todayLogStats.completionRate) / 100}
+                    strokeDashoffset={
+                      175 - (175 * (adherenceData?.hasData ? adherenceData.adherenceScore : 0)) / 100
+                    }
                   />
                 </svg>
               </div>

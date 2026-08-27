@@ -17,9 +17,11 @@ import {
   markMedicationTaken,
   markMedicationSkipped,
 } from '../services/medicationLogApi';
+import { getTodayAdherence } from '../services/analyticsApi';
 
 const MedicationTracker = () => {
   const [trackerData, setTrackerData] = useState(null);
+  const [todayAdherence, setTodayAdherence] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
@@ -30,9 +32,16 @@ const MedicationTracker = () => {
     if (!isSilent) setLoading(true);
     setError('');
     try {
-      const response = await getTodayMedicationLogs();
-      if (response?.data) {
-        setTrackerData(response.data);
+      const [logsRes, adherenceRes] = await Promise.allSettled([
+        getTodayMedicationLogs(),
+        getTodayAdherence(),
+      ]);
+
+      if (logsRes.status === 'fulfilled' && logsRes.value?.data) {
+        setTrackerData(logsRes.value.data);
+      }
+      if (adherenceRes.status === 'fulfilled' && adherenceRes.value?.data) {
+        setTodayAdherence(adherenceRes.value.data);
       }
     } catch (err) {
       setError(
@@ -79,6 +88,7 @@ const MedicationTracker = () => {
           };
         });
         showFeedback('success', 'Dose marked as taken successfully!');
+        getTodayAdherence().then((res) => { if (res?.data) setTodayAdherence(res.data); }).catch(() => {});
       }
     } catch (err) {
       showFeedback('error', err.response?.data?.message || 'Failed to mark dose as taken');
@@ -109,6 +119,7 @@ const MedicationTracker = () => {
           };
         });
         showFeedback('success', 'Dose marked as skipped.');
+        getTodayAdherence().then((res) => { if (res?.data) setTodayAdherence(res.data); }).catch(() => {});
       }
     } catch (err) {
       showFeedback('error', err.response?.data?.message || 'Failed to skip dose');
@@ -188,11 +199,20 @@ const MedicationTracker = () => {
       <Card className="p-6 bg-gradient-to-r from-teal-900 via-primary to-primary-light text-white shadow-md">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-md">
-            <span className="text-xs font-semibold tracking-wider uppercase text-teal-200">
-              Today's Adherence Progress
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold tracking-wider uppercase text-teal-200">
+                Today's Adherence
+              </span>
+              {todayAdherence?.category && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/20 text-white">
+                  {todayAdherence.category}
+                </span>
+              )}
+            </div>
             <h2 className="text-2xl font-bold tracking-tight">
-              {stats.taken} of {stats.total} doses completed
+              {todayAdherence?.hasData
+                ? `${todayAdherence.taken} / ${todayAdherence.totalEligible} completed`
+                : `${stats.taken} of ${stats.total} completed`}
             </h2>
             <p className="text-xs text-teal-100/90">
               {stats.completionRate === 100
@@ -204,10 +224,12 @@ const MedicationTracker = () => {
           </div>
 
           <div className="flex items-center gap-6">
-            {/* Circular or bar metric */}
+            {/* Adherence Metric */}
             <div className="text-right">
-              <span className="text-4xl font-extrabold tracking-tight">{stats.completionRate}%</span>
-              <p className="text-xs text-teal-200 mt-0.5">Completed</p>
+              <span className="text-4xl font-extrabold tracking-tight">
+                {todayAdherence?.hasData ? `${todayAdherence.adherenceScore}%` : `${stats.completionRate}%`}
+              </span>
+              <p className="text-xs text-teal-200 mt-0.5">Adherence Score</p>
             </div>
           </div>
         </div>
@@ -216,7 +238,9 @@ const MedicationTracker = () => {
         <div className="w-full bg-white/20 h-2.5 rounded-full mt-5 overflow-hidden">
           <div
             className="bg-emerald-400 h-full rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${stats.completionRate}%` }}
+            style={{
+              width: `${todayAdherence?.hasData ? todayAdherence.adherenceScore : stats.completionRate}%`,
+            }}
           />
         </div>
       </Card>

@@ -21,7 +21,7 @@ const Sidebar = () => {
     { name: 'Medicines', href: '/medicines', icon: Pill },
     { name: 'Reminders', href: '/reminders', icon: BellRing },
     { name: 'Dose Tracker', href: '/tracker', icon: Activity },
-    { name: 'Analytics', href: '#', icon: BarChart2 },
+    { name: 'Adherence', href: '/adherence', icon: BarChart2 },
     { name: 'Health Reports', href: '#', icon: FileText },
     { name: 'Doctors', href: '#', icon: Stethoscope },
   ];
