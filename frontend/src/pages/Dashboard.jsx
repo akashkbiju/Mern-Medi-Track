@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Pill, BellRing, Activity, FileText, Clock, AlertCircle } from 'lucide-react';
+import { Pill, BellRing, Activity, FileText, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import StatCard from '../components/dashboard/StatCard';
 import Card from '../components/ui/Card';
@@ -8,6 +8,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useAuth } from '../context/AuthContext';
 import { getMedicines } from '../services/medicineApi';
 import { getUpcomingReminders } from '../services/reminderApi';
+import { getTodayMedicationLogs } from '../services/medicationLogApi';
 import DailyMedicationSchedule from '../components/medicine/DailyMedicationSchedule';
 
 // Mock Data for Health Overview chart (Health records implemented in future steps)
@@ -21,16 +22,19 @@ const healthData = [
   { name: 'Sun', weight: 69.3, bp: 120 },
 ];
 
-const recentActivity = [
-  { id: 1, title: 'Smart reminder engine synchronized', time: 'Today', type: 'reminder' },
-  { id: 2, title: 'Medicine profile synchronized', time: 'Today', type: 'medication' },
-];
-
 const Dashboard = () => {
   const { user } = useAuth();
   const [activeCount, setActiveCount] = useState(null);
   const [upcomingReminders, setUpcomingReminders] = useState([]);
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
+  const [todayLogStats, setTodayLogStats] = useState({
+    total: 0,
+    taken: 0,
+    pending: 0,
+    missed: 0,
+    skipped: 0,
+    completionRate: 0,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -56,6 +60,15 @@ const Dashboard = () => {
         if (isMounted) setLoadingUpcoming(false);
       });
 
+    // Fetch today's dose tracking statistics
+    getTodayMedicationLogs()
+      .then((res) => {
+        if (isMounted && res?.data?.stats) {
+          setTodayLogStats(res.data.stats);
+        }
+      })
+      .catch(() => {});
+
     return () => {
       isMounted = false;
     };
@@ -76,7 +89,7 @@ const Dashboard = () => {
         <h1 className="text-2xl font-bold text-slate-900">
           {getGreeting()}, {displayName}
         </h1>
-        <p className="mt-1 text-sm text-slate-500">Here's your medication and reminder overview for today.</p>
+        <p className="mt-1 text-sm text-slate-500">Here's your medication adherence and reminder overview for today.</p>
       </div>
 
       {/* Stat Cards */}
@@ -88,10 +101,14 @@ const Dashboard = () => {
           trend={{ value: 'Active', label: 'prescriptions', isPositive: true }}
         />
         <StatCard 
-          title="Medication Adherence" 
-          value="92%" 
+          title="Today's Doses Taken" 
+          value={`${todayLogStats.taken} / ${todayLogStats.total}`} 
           icon={Activity}
-          trend={{ value: '+2%', label: 'vs last week', isPositive: true }}
+          trend={{
+            value: `${todayLogStats.completionRate}%`,
+            label: `${todayLogStats.pending} pending`,
+            isPositive: todayLogStats.completionRate > 50,
+          }}
         />
         <StatCard 
           title="Upcoming Reminders" 
@@ -141,16 +158,32 @@ const Dashboard = () => {
         <div className="space-y-6">
           {/* Adherence Card */}
           <Card className="p-6 bg-gradient-to-br from-primary to-primary-light text-white">
-            <h2 className="text-lg font-semibold mb-2">Weekly Adherence</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold">Today's Progress</h2>
+              <Link to="/tracker" className="text-xs text-teal-200 hover:underline">
+                Open Tracker →
+              </Link>
+            </div>
             <div className="mt-4 flex items-end justify-between">
               <div>
-                <p className="text-4xl font-bold">92%</p>
-                <p className="text-sm text-slate-300 mt-1">Good adherence tracking</p>
+                <p className="text-4xl font-bold">{todayLogStats.completionRate}%</p>
+                <p className="text-sm text-slate-200 mt-1">
+                  {todayLogStats.taken} of {todayLogStats.total} doses taken
+                </p>
               </div>
               <div className="h-16 w-16 relative">
                 <svg className="w-full h-full transform -rotate-90">
                   <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.2)" strokeWidth="8" fill="none" />
-                  <circle cx="32" cy="32" r="28" stroke="white" strokeWidth="8" fill="none" strokeDasharray="175" strokeDashoffset="14" />
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r="28"
+                    stroke="white"
+                    strokeWidth="8"
+                    fill="none"
+                    strokeDasharray="175"
+                    strokeDashoffset={175 - (175 * todayLogStats.completionRate) / 100}
+                  />
                 </svg>
               </div>
             </div>
@@ -208,18 +241,18 @@ const Dashboard = () => {
             )}
           </Card>
 
-          {/* Quick Access to Reminders & Prescriptions */}
+          {/* Quick Access to Live Tracker */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-2">Smart Reminders</h2>
+            <h2 className="text-lg font-semibold text-slate-900 mb-2">Medication Tracker</h2>
             <p className="text-xs text-slate-500 mb-4">
-              View due reminders, check upcoming schedules, or synchronize your daily dose alerts.
+              Mark doses as taken, record skips, and view real-time adherence progress.
             </p>
-            <Link to="/reminders" className="block">
+            <Link to="/tracker" className="block">
               <button
                 type="button"
                 className="w-full py-2 px-4 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition"
               >
-                Go to Reminders Hub
+                Open Daily Checklist
               </button>
             </Link>
           </Card>

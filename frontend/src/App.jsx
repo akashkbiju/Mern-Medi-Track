@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Medicines from './pages/Medicines';
 import Reminders from './pages/Reminders';
+import MedicationTracker from './pages/MedicationTracker';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { checkApiHealth } from './services/api';
@@ -77,6 +78,17 @@ function App() {
           }
         >
           <Route index element={<Reminders />} />
+        </Route>
+
+        <Route
+          path="/tracker"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<MedicationTracker />} />
         </Route>
       </Routes>
     </AuthProvider>
