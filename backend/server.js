@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import http from 'http';
 import app from './app.js';
 import { env } from './config/env.js';
@@ -6,22 +7,30 @@ import { logger } from './utils/logger.js';
 import { startReminderScheduler, stopReminderScheduler } from './services/reminderScheduler.js';
 
 const startServer = async () => {
-  // 1. Connect to MongoDB
-  await connectDB();
-
-  // 2. Start Background Reminder Scheduler (with initial recovery pass)
-  await startReminderScheduler();
-
-  // 3. Create HTTP Server
-  const server = http.createServer(app);
-
   const PORT = env.PORT || 5000;
 
-  // 4. Start Listening
-  server.listen(PORT, () => {
-    logger.info(`MediTrack+ API Server running in ${env.NODE_ENV} mode`);
-    logger.info(`Server URL: http://localhost:${PORT}`);
+  // 1. Create HTTP Server
+  const server = http.createServer(app);
+
+  // 2. Start Listening immediately on 0.0.0.0 so Render detects open port instantly
+  server.listen(PORT, '0.0.0.0', () => {
+    logger.info(`MediTrack+ API Server running in ${env.NODE_ENV} mode on port ${PORT}`);
+    logger.info(`Server URL: http://0.0.0.0:${PORT}`);
     logger.info(`Health Endpoint: http://localhost:${PORT}/api/health`);
+  });
+
+  // 3. When MongoDB connects (immediately or on retry), initialize the reminder scheduler
+  mongoose.connection.once('open', async () => {
+    try {
+      await startReminderScheduler();
+    } catch (err) {
+      logger.error(`[ReminderScheduler] Startup error: ${err.message}`);
+    }
+  });
+
+  // 4. Initiate MongoDB Connection in background
+  connectDB().catch((err) => {
+    logger.error(`Initial MongoDB connection failed: ${err.message}`);
   });
 
   // 5. Graceful Shutdown Handlers
