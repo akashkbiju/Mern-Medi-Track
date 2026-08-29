@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Pill, BellRing, Activity, FileText, CheckCircle2, Clock, AlertCircle, Flame, TrendingUp } from 'lucide-react';
+import { Pill, BellRing, Activity, FileText, CheckCircle2, Clock, AlertCircle, Flame, TrendingUp, HeartPulse } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import StatCard from '../components/dashboard/StatCard';
 import Card from '../components/ui/Card';
@@ -10,6 +10,7 @@ import { getMedicines } from '../services/medicineApi';
 import { getUpcomingReminders } from '../services/reminderApi';
 import { getTodayMedicationLogs } from '../services/medicationLogApi';
 import { getWeeklyAdherence } from '../services/analyticsApi';
+import { getHealthRecords } from '../services/healthApi';
 import DailyMedicationSchedule from '../components/medicine/DailyMedicationSchedule';
 
 // Mock Data for Health Overview chart (Health records implemented in future steps)
@@ -29,6 +30,7 @@ const Dashboard = () => {
   const [upcomingReminders, setUpcomingReminders] = useState([]);
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
   const [adherenceData, setAdherenceData] = useState(null);
+  const [healthRecordsCount, setHealthRecordsCount] = useState(null);
   const [todayLogStats, setTodayLogStats] = useState({
     total: 0,
     taken: 0,
@@ -80,6 +82,16 @@ const Dashboard = () => {
       })
       .catch(() => {});
 
+    // Fetch health records count for summary
+    getHealthRecords({ limit: 1 })
+      .then((res) => {
+        if (isMounted) {
+          const total = res?.pagination?.total ?? (Array.isArray(res?.data) ? res.data.length : 0);
+          setHealthRecordsCount(total);
+        }
+      })
+      .catch(() => {});
+
     return () => {
       isMounted = false;
     };
@@ -127,11 +139,14 @@ const Dashboard = () => {
           icon={BellRing}
           trend={{ value: `${upcomingReminders.length} scheduled`, label: 'next 24h', isPositive: true }}
         />
-        <StatCard 
-          title="Health Records" 
-          value="24" 
-          icon={FileText}
-        />
+        <Link to="/health" className="block transition-transform hover:-translate-y-0.5">
+          <StatCard 
+            title="Health Records" 
+            value={healthRecordsCount !== null ? String(healthRecordsCount) : '...'} 
+            icon={HeartPulse}
+            trend={{ value: 'Track Vitals', label: '→', isPositive: true }}
+          />
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -142,7 +157,12 @@ const Dashboard = () => {
 
           {/* Health Overview Chart */}
           <Card className="p-6">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">Health Trends</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">Health Trends</h2>
+              <Link to="/health" className="text-xs font-semibold text-teal-600 hover:text-teal-700 hover:underline flex items-center gap-1">
+                Manage Vitals →
+              </Link>
+            </div>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={healthData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>

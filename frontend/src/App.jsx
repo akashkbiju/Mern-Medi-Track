@@ -10,6 +10,7 @@ import Medicines from './pages/Medicines';
 import Reminders from './pages/Reminders';
 import MedicationTracker from './pages/MedicationTracker';
 import Adherence from './pages/Adherence';
+import HealthTracking from './pages/HealthTracking';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { checkApiHealth } from './services/api';
@@ -101,6 +102,28 @@ function App() {
           }
         >
           <Route index element={<Adherence />} />
+        </Route>
+
+        <Route
+          path="/health"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<HealthTracking />} />
+        </Route>
+
+        <Route
+          path="/health-records"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<HealthTracking />} />
         </Route>
 
         <Route
