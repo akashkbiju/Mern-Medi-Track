@@ -6,6 +6,7 @@ import {
   Activity, 
   BarChart2, 
   HeartPulse,
+  TrendingUp,
   FileText, 
   Stethoscope, 
   Settings, 
@@ -24,6 +25,7 @@ const Sidebar = () => {
     { name: 'Dose Tracker', href: '/tracker', icon: Activity },
     { name: 'Adherence', href: '/adherence', icon: BarChart2 },
     { name: 'Health Tracking', href: '/health', icon: HeartPulse },
+    { name: 'Health Analytics', href: '/health-analytics', icon: TrendingUp },
     { name: 'Health Reports', href: '#', icon: FileText },
     { name: 'Doctors', href: '#', icon: Stethoscope },
   ];

@@ -9,20 +9,9 @@ import { useAuth } from '../context/AuthContext';
 import { getMedicines } from '../services/medicineApi';
 import { getUpcomingReminders } from '../services/reminderApi';
 import { getTodayMedicationLogs } from '../services/medicationLogApi';
-import { getWeeklyAdherence } from '../services/analyticsApi';
+import { getWeeklyAdherence, getHealthSummary, getHealthAnalytics } from '../services/analyticsApi';
 import { getHealthRecords } from '../services/healthApi';
 import DailyMedicationSchedule from '../components/medicine/DailyMedicationSchedule';
-
-// Mock Data for Health Overview chart (Health records implemented in future steps)
-const healthData = [
-  { name: 'Mon', weight: 70, bp: 120 },
-  { name: 'Tue', weight: 70.2, bp: 118 },
-  { name: 'Wed', weight: 70.1, bp: 122 },
-  { name: 'Thu', weight: 69.8, bp: 119 },
-  { name: 'Fri', weight: 69.5, bp: 121 },
-  { name: 'Sat', weight: 69.4, bp: 118 },
-  { name: 'Sun', weight: 69.3, bp: 120 },
-];
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -31,6 +20,8 @@ const Dashboard = () => {
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
   const [adherenceData, setAdherenceData] = useState(null);
   const [healthRecordsCount, setHealthRecordsCount] = useState(null);
+  const [healthSummary, setHealthSummary] = useState(null);
+  const [weightTrend, setWeightTrend] = useState([]);
   const [todayLogStats, setTodayLogStats] = useState({
     total: 0,
     taken: 0,
@@ -88,6 +79,24 @@ const Dashboard = () => {
         if (isMounted) {
           const total = res?.pagination?.total ?? (Array.isArray(res?.data) ? res.data.length : 0);
           setHealthRecordsCount(total);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch 7-day health summary
+    getHealthSummary({ period: '7d' })
+      .then((res) => {
+        if (isMounted && res?.data?.metrics) {
+          setHealthSummary(res.data.metrics);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch 7-day weight analytics trend for dashboard chart
+    getHealthAnalytics({ metric: 'weight', period: '7d' })
+      .then((res) => {
+        if (isMounted && res?.data?.trend) {
+          setWeightTrend(res.data.trend);
         }
       })
       .catch(() => {});
@@ -155,33 +164,117 @@ const Dashboard = () => {
           {/* Daily Medication Schedule Widget */}
           <DailyMedicationSchedule />
 
-          {/* Health Overview Chart */}
+          {/* Health Overview & Trends */}
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-900">Health Trends</h2>
-              <Link to="/health" className="text-xs font-semibold text-teal-600 hover:text-teal-700 hover:underline flex items-center gap-1">
-                Manage Vitals →
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Health Trends</h2>
+                <p className="text-xs text-slate-500">Recent 7-day vital measurements overview</p>
+              </div>
+              <Link
+                to="/health-analytics"
+                className="text-xs font-semibold text-teal-600 hover:text-teal-700 hover:underline flex items-center gap-1"
+              >
+                View Health Analytics →
               </Link>
             </div>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={healthData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#0d9488" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} domain={['dataMin - 2', 'dataMax + 2']} />
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  />
-                  <Area type="monotone" dataKey="weight" stroke="#0d9488" strokeWidth={2} fillOpacity={1} fill="url(#colorWeight)" />
-                </AreaChart>
-              </ResponsiveContainer>
+
+            {/* Quick Vitals Summary Chips */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+              <div className="rounded-lg bg-slate-50 border border-slate-100 p-2.5">
+                <span className="text-[11px] font-medium text-slate-400 block">Weight</span>
+                <span className="text-sm font-bold text-slate-800">
+                  {healthSummary?.weight?.latest !== null && healthSummary?.weight?.latest !== undefined
+                    ? `${healthSummary.weight.latest} kg`
+                    : '--'}
+                </span>
+              </div>
+              <div className="rounded-lg bg-slate-50 border border-slate-100 p-2.5">
+                <span className="text-[11px] font-medium text-slate-400 block">Blood Pressure</span>
+                <span className="text-sm font-bold text-slate-800">
+                  {healthSummary?.bloodPressure?.latest
+                    ? `${healthSummary.bloodPressure.latest.systolic}/${healthSummary.bloodPressure.latest.diastolic}`
+                    : '--'}
+                </span>
+              </div>
+              <div className="rounded-lg bg-slate-50 border border-slate-100 p-2.5">
+                <span className="text-[11px] font-medium text-slate-400 block">Blood Sugar</span>
+                <span className="text-sm font-bold text-slate-800">
+                  {healthSummary?.bloodSugar?.latest !== null && healthSummary?.bloodSugar?.latest !== undefined
+                    ? `${healthSummary.bloodSugar.latest} mg/dL`
+                    : '--'}
+                </span>
+              </div>
+              <div className="rounded-lg bg-slate-50 border border-slate-100 p-2.5">
+                <span className="text-[11px] font-medium text-slate-400 block">Heart Rate</span>
+                <span className="text-sm font-bold text-slate-800">
+                  {healthSummary?.heartRate?.latest !== null && healthSummary?.heartRate?.latest !== undefined
+                    ? `${healthSummary.heartRate.latest} BPM`
+                    : '--'}
+                </span>
+              </div>
             </div>
+
+            {/* Weight Trend Chart / Empty State */}
+            {weightTrend.length > 0 ? (
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={weightTrend} margin={{ top: 10, right: 20, left: -15, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#0d9488" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#0d9488" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="date"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#64748b', fontSize: 11 }}
+                      tickFormatter={(val) => (val ? val.slice(5) : '')}
+                      dy={8}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#64748b', fontSize: 11 }}
+                      domain={['auto', 'auto']}
+                    />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0',
+                        fontSize: '12px',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.05)',
+                      }}
+                      formatter={(val) => [`${val} kg`, 'Weight']}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#0d9488"
+                      strokeWidth={2}
+                      fillOpacity={1}
+                      fill="url(#colorWeight)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-44 flex flex-col items-center justify-center rounded-xl bg-slate-50/60 border border-dashed border-slate-200 text-center px-4">
+                <HeartPulse className="h-6 w-6 text-slate-400 mb-1.5" />
+                <p className="text-xs font-semibold text-slate-700">No recent vitals in last 7 days</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Log your blood pressure, weight, or other metrics to see trends.
+                </p>
+                <Link to="/health" className="mt-2.5">
+                  <span className="text-xs font-semibold text-teal-600 hover:text-teal-700 hover:underline">
+                    + Log Health Record
+                  </span>
+                </Link>
+              </div>
+            )}
           </Card>
         </div>
 
