@@ -792,4 +792,41 @@ MediTrack+ provides a responsive, accessible, clinical-grade patient interface f
    - Quick action link from "Health Trends" section to "Manage Vitals".
    - "Health Tracking" navigation link in the application sidebar with `HeartPulse` icon.
 
+## Step 16 — Health Analytics & Charts
+
+MediTrack+ includes a comprehensive, timezone-aware **Health Analytics and Charts Engine** that transforms recorded patient vitals into statistical trends and responsive visualizations.
+
+> [!IMPORTANT]
+> **Clinical Safety & Non-Diagnostic Compliance**:
+> Health analytics strictly computes and reports mathematical changes and graphical trends over time. In accordance with medical software safety guidelines, it does **NOT** provide medical diagnoses, treatment recommendations, or diagnostic classifications (e.g. "normal", "hypertensive", "good", or "bad").
+
+### Supported Metrics & Standard Units
+- **Weight**: `kg`
+- **Blood Pressure**: `mmHg` (Dual-line tracking: Systolic & Diastolic)
+- **Blood Sugar**: `mg/dL`
+- **Heart Rate**: `BPM`
+- **Temperature**: `°C`
+- **All Metrics**: Composite view providing top-level KPI summaries and trend charts for all 5 metrics
+
+### Supported Time Windows
+- **`7d`**: Last 7 calendar days inclusive (`today - 6 days` to `today`)
+- **`30d`**: Last 30 calendar days inclusive (`today - 29 days` to `today`)
+- **`90d`**: Last 90 calendar days inclusive (`today - 89 days` to `today`)
+- **`custom`**: Validated calendar range (`startDate` to `endDate`, up to 366 days)
+
+### Statistical Calculations
+- **Chronological Sorting**: Raw records sorted ascending by `recordDate` to guarantee chronological direction.
+- **Multiple Records Preservation**: Multiple measurements on the same calendar date are preserved with exact timestamps and formatted 12-hour local times.
+- **Missing Value Handling**: Partial records are handled gracefully; missing metrics are never coerced to zero.
+- **Change Calculation**:
+  - Absolute Change: $\text{latest} - \text{previous}$ (rounded to 2 decimal places).
+  - Percentage Change: $\left(\frac{\text{latest} - \text{previous}}{|\text{previous}|}\right) \times 100$ (computed only when $\text{previous} \ne 0$).
+  - Blood Pressure: Computes independent numerical changes for systolic and diastolic parameters.
+  - Single/Zero records: Safely returns `null` for change and percentage change without crashing or yielding NaN.
+
+### API Endpoints
+- `GET /api/analytics/health?metric=weight|bloodPressure|bloodSugar|heartRate|temperature|all&period=7d|30d|90d|custom`: Retrieves trend arrays, latest value, previous value, changes, record counts, and units.
+- `GET /api/analytics/health/summary?period=7d|30d|90d|custom`: Retrieves compact KPI cards for all five metrics.
+
+
 

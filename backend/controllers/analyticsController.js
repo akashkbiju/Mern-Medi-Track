@@ -1,6 +1,7 @@
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { adherenceService } from '../services/adherenceService.js';
+import { healthAnalyticsService } from '../services/healthAnalyticsService.js';
 
 /**
  * Health & Adherence Analytics Controller
@@ -30,16 +31,51 @@ export const getAdherenceSummary = asyncHandler(async (req, res) => {
 export const getAdherenceAnalytics = getAdherenceSummary;
 
 /**
- * Health trends placeholder for future step
+ * Get health analytics trends and statistical changes
+ * GET /api/analytics/health?metric=weight|bloodPressure|bloodSugar|heartRate|temperature|all&period=7d|30d|90d|custom
  */
-export const getHealthTrends = asyncHandler(async (req, res) => {
-  return res.status(501).json(
-    new ApiResponse(false, 'Health trends analytics will be implemented in a later development step')
+export const getHealthAnalytics = asyncHandler(async (req, res) => {
+  const { metric, period, startDate, endDate } = req.query;
+
+  const data = await healthAnalyticsService.getHealthAnalytics(req.user.id, {
+    metric,
+    period,
+    startDate,
+    endDate,
+  });
+
+  return res.status(200).json(
+    new ApiResponse(true, 'Health analytics retrieved successfully', data)
   );
 });
+
+/**
+ * Get compact health summary metrics
+ * GET /api/analytics/health/summary?period=7d|30d|90d|custom
+ */
+export const getHealthSummary = asyncHandler(async (req, res) => {
+  const { period, startDate, endDate } = req.query;
+
+  const data = await healthAnalyticsService.getHealthSummary(req.user.id, {
+    period,
+    startDate,
+    endDate,
+  });
+
+  return res.status(200).json(
+    new ApiResponse(true, 'Health summary retrieved successfully', data)
+  );
+});
+
+/**
+ * Health trends alias
+ */
+export const getHealthTrends = getHealthAnalytics;
 
 export default {
   getAdherenceSummary,
   getAdherenceAnalytics,
+  getHealthAnalytics,
+  getHealthSummary,
   getHealthTrends,
 };
