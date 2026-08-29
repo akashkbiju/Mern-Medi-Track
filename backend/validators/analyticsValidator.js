@@ -70,6 +70,92 @@ export const validateAdherenceQuery = (req, res, next) => {
   next();
 };
 
+/**
+ * Validate query parameters for GET /api/analytics/health and /api/analytics/health/summary
+ */
+export const validateHealthAnalyticsQuery = (req, res, next) => {
+  const { metric, period, startDate, endDate } = req.query;
+
+  const validMetrics = ['weight', 'bloodPressure', 'bloodSugar', 'heartRate', 'temperature', 'all'];
+  const validMetricsLower = validMetrics.map((m) => m.toLowerCase());
+  const validPeriods = ['7d', '30d', '90d', 'custom'];
+
+  if (metric !== undefined) {
+    if (
+      typeof metric !== 'string' ||
+      (!validMetrics.includes(metric) && !validMetricsLower.includes(metric.toLowerCase()))
+    ) {
+      return next(
+        new ApiError(
+          400,
+          `Invalid metric '${metric}'. Allowed values: ${validMetrics.join(', ')}`
+        )
+      );
+    }
+  }
+
+  if (period !== undefined) {
+    if (typeof period !== 'string' || !validPeriods.includes(period.toLowerCase())) {
+      return next(
+        new ApiError(
+          400,
+          `Invalid period '${period}'. Allowed values: ${validPeriods.join(', ')}`
+        )
+      );
+    }
+  }
+
+  const resolvedPeriod = (period || '30d').toLowerCase();
+
+  if (resolvedPeriod === 'custom') {
+    if (!startDate || !endDate) {
+      return next(
+        new ApiError(
+          400,
+          "Both 'startDate' and 'endDate' are required when period is 'custom'"
+        )
+      );
+    }
+
+    if (!isValidDateString(startDate)) {
+      return next(
+        new ApiError(
+          400,
+          `Invalid startDate '${startDate}'. Must be in YYYY-MM-DD format (e.g. 2026-08-01)`
+        )
+      );
+    }
+
+    if (!isValidDateString(endDate)) {
+      return next(
+        new ApiError(
+          400,
+          `Invalid endDate '${endDate}'. Must be in YYYY-MM-DD format (e.g. 2026-09-01)`
+        )
+      );
+    }
+
+    if (startDate > endDate) {
+      return next(
+        new ApiError(400, `startDate (${startDate}) cannot be after endDate (${endDate})`)
+      );
+    }
+
+    const rangeDays = getDateRangeArray(startDate, endDate);
+    if (rangeDays.length > 366) {
+      return next(
+        new ApiError(
+          400,
+          `Date range (${rangeDays.length} days) exceeds maximum allowed limit of 366 days`
+        )
+      );
+    }
+  }
+
+  next();
+};
+
 export default {
   validateAdherenceQuery,
+  validateHealthAnalyticsQuery,
 };

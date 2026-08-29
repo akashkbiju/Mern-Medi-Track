@@ -1,14 +1,14 @@
+import { healthAnalyticsService } from './healthAnalyticsService.js';
+import { adherenceService } from './adherenceService.js';
+
 /**
- * Health & Adherence Analytics Service Foundation
+ * Health & Adherence Analytics Service
  */
 export const analyticsService = {
-  calculateAdherence: async (userId, timeframe) => {
-    throw new Error('calculateAdherence will be implemented in a future step');
-  },
-
-  getVitalsTrend: async (userId, parameter) => {
-    throw new Error('getVitalsTrend will be implemented in a future step');
-  },
+  calculateAdherence: adherenceService.calculateAdherence,
+  getAdherenceSummary: adherenceService.getAdherenceSummary,
+  getHealthAnalytics: healthAnalyticsService.getHealthAnalytics,
+  getHealthSummary: healthAnalyticsService.getHealthSummary,
 };
 
 export default analyticsService;

@@ -792,4 +792,32 @@ MediTrack+ provides a responsive, accessible, clinical-grade patient interface f
    - Quick action link from "Health Trends" section to "Manage Vitals".
    - "Health Tracking" navigation link in the application sidebar with `HeartPulse` icon.
 
+## Step 16 — Health Analytics + Charts
+
+MediTrack+ provides a comprehensive, clinical-grade **Health Analytics and Charts** system enabling patients to visually track and analyze their vital health trends over time across five key parameters:
+1. **Weight** (`kg`)
+2. **Blood Pressure** (`mmHg`) — dual systolic and diastolic trends
+3. **Blood Sugar** (`mg/dL`)
+4. **Heart Rate** (`BPM`)
+5. **Temperature** (`°C`)
+
+### Clinical Safety & Non-Diagnostic Compliance
+> **Disclaimer**: The analytics feature summarizes user-recorded measurements and does not provide medical diagnosis or treatment recommendations. All changes and trends are purely numerical reports without normative or diagnostic classifications (e.g. "normal", "high", "low", "good", "bad", or "hypertension").
+
+### API Endpoints
+- `GET /api/analytics/health`: Returns trend arrays, latest values, previous values, numerical change, percentage change, and record counts for a specific metric or all metrics.
+  - **Query Parameters**:
+    - `metric`: `weight | bloodPressure | bloodSugar | heartRate | temperature | all` (default: `all`)
+    - `period`: `7d | 30d | 90d | custom` (default: `30d`)
+    - `startDate`: `YYYY-MM-DD` (required when `period === 'custom'`)
+    - `endDate`: `YYYY-MM-DD` (required when `period === 'custom'`)
+- `GET /api/analytics/health/summary`: Returns a compact KPI summary across all 5 vital parameters for the requested time period.
+
+### Analytical Calculations
+- **Change**: `latest - previous` (rounded to 2 decimal places).
+- **Percentage Change**: `((latest - previous) / previous) * 100` (computed only when previous is available and non-zero).
+- **Missing Data Handling**: Unrecorded metrics are preserved as `null` or omitted from individual metric trends, never replaced with zero.
+- **Multiple Daily Records**: Exact measurement timestamps (`date`, `time`, `dateTime`) are preserved chronologically rather than averaged, ensuring complete clinical fidelity for multiple readings on the same day.
+- **User Isolation & Security**: Protected by JWT authentication and scoped exclusively to `req.user.id`. Custom date ranges are validated with a 366-day safety boundary.
+
 
