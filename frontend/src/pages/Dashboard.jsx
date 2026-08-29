@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { getMedicines } from '../services/medicineApi';
 import { getUpcomingReminders } from '../services/reminderApi';
 import { getTodayMedicationLogs } from '../services/medicationLogApi';
-import { getWeeklyAdherence } from '../services/analyticsApi';
+import { getWeeklyAdherence, getHealthSummary } from '../services/analyticsApi';
 import { getHealthRecords } from '../services/healthApi';
 import DailyMedicationSchedule from '../components/medicine/DailyMedicationSchedule';
 
@@ -31,6 +31,7 @@ const Dashboard = () => {
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
   const [adherenceData, setAdherenceData] = useState(null);
   const [healthRecordsCount, setHealthRecordsCount] = useState(null);
+  const [healthSummary, setHealthSummary] = useState(null);
   const [todayLogStats, setTodayLogStats] = useState({
     total: 0,
     taken: 0,
@@ -88,6 +89,15 @@ const Dashboard = () => {
         if (isMounted) {
           const total = res?.pagination?.total ?? (Array.isArray(res?.data) ? res.data.length : 0);
           setHealthRecordsCount(total);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch 30-day health analytics summary
+    getHealthSummary({ period: '30d' })
+      .then((res) => {
+        if (isMounted && res?.data?.metrics) {
+          setHealthSummary(res.data.metrics);
         }
       })
       .catch(() => {});
@@ -155,15 +165,62 @@ const Dashboard = () => {
           {/* Daily Medication Schedule Widget */}
           <DailyMedicationSchedule />
 
-          {/* Health Overview Chart */}
+          {/* Health Overview & Trends Card */}
           <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-slate-900">Health Trends</h2>
-              <Link to="/health" className="text-xs font-semibold text-teal-600 hover:text-teal-700 hover:underline flex items-center gap-1">
-                Manage Vitals →
-              </Link>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Health Overview & Trends</h2>
+                <p className="text-xs text-slate-500">Recent vitals and 7-day weight trajectory</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Link to="/health" className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors">
+                  Log Vitals
+                </Link>
+                <Link to="/health-analytics" className="text-xs font-semibold text-teal-600 hover:text-teal-700 hover:underline flex items-center gap-1">
+                  Full Analytics →
+                </Link>
+              </div>
             </div>
-            <div className="h-72">
+
+            {/* Live Latest Vitals Quick Snapshot */}
+            {healthSummary && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-4 p-3 bg-slate-50/80 rounded-xl border border-slate-100 text-xs">
+                <div>
+                  <span className="text-[11px] text-slate-500 block">Weight</span>
+                  <span className="font-bold text-slate-900 font-mono">
+                    {healthSummary.weight?.latest !== null && healthSummary.weight?.latest !== undefined
+                      ? `${healthSummary.weight.latest} kg`
+                      : '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-slate-500 block">Blood Pressure</span>
+                  <span className="font-bold text-slate-900 font-mono">
+                    {healthSummary.bloodPressure?.latest
+                      ? `${healthSummary.bloodPressure.latest.systolic}/${healthSummary.bloodPressure.latest.diastolic}`
+                      : '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-slate-500 block">Blood Sugar</span>
+                  <span className="font-bold text-slate-900 font-mono">
+                    {healthSummary.bloodSugar?.latest !== null && healthSummary.bloodSugar?.latest !== undefined
+                      ? `${healthSummary.bloodSugar.latest} mg/dL`
+                      : '—'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[11px] text-slate-500 block">Heart Rate</span>
+                  <span className="font-bold text-slate-900 font-mono">
+                    {healthSummary.heartRate?.latest !== null && healthSummary.heartRate?.latest !== undefined
+                      ? `${healthSummary.heartRate.latest} BPM`
+                      : '—'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={healthData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                   <defs>
@@ -181,6 +238,16 @@ const Dashboard = () => {
                   <Area type="monotone" dataKey="weight" stroke="#0d9488" strokeWidth={2} fillOpacity={1} fill="url(#colorWeight)" />
                 </AreaChart>
               </ResponsiveContainer>
+            </div>
+
+            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+              <span className="text-slate-400">Detailed graphs available for all 5 vital signs</span>
+              <Link
+                to="/health-analytics"
+                className="font-semibold text-teal-600 hover:text-teal-700 hover:underline flex items-center gap-1"
+              >
+                Open Health Analytics →
+              </Link>
             </div>
           </Card>
         </div>

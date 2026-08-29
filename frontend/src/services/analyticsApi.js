@@ -44,10 +44,30 @@ export const getCustomAdherence = async (startDate, endDate) => {
   return getAdherenceSummary({ period: 'custom', startDate, endDate });
 };
 
+/**
+ * Fetch health measurements analytics trend and statistical changes
+ * @param {Object} [params={}] - { metric: 'weight'|'bloodPressure'|'bloodSugar'|'heartRate'|'temperature'|'all', period: '7d'|'30d'|'90d'|'custom', startDate, endDate }
+ */
+export const getHealthAnalytics = async (params = {}) => {
+  const response = await api.get('/analytics/health', { params });
+  return response.data;
+};
+
+/**
+ * Fetch compact health summary cards for all metrics
+ * @param {Object} [params={}] - { period: '7d'|'30d'|'90d'|'custom', startDate, endDate }
+ */
+export const getHealthSummary = async (params = {}) => {
+  const response = await api.get('/analytics/health/summary', { params });
+  return response.data;
+};
+
 export default {
   getAdherenceSummary,
   getTodayAdherence,
   getWeeklyAdherence,
   getMonthlyAdherence,
   getCustomAdherence,
+  getHealthAnalytics,
+  getHealthSummary,
 };
