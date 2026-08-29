@@ -753,3 +753,43 @@ MediTrack+ includes a robust, validated, and scalable data architecture for trac
 - `PATCH /api/health-records/:id`: Update allowed measurement fields (rejects mutation of `user`, `_id`, or `createdAt`).
 - `DELETE /api/health-records/:id`: Hard-delete a patient's own record.
 
+## Step 15 — Health Tracking UI + CRUD
+
+MediTrack+ provides a responsive, accessible, clinical-grade patient interface for recording, viewing, editing, and managing vital health measurements.
+
+### Features
+1. **Health Summary Overview (`HealthSummary.jsx`)**:
+   - Cards displaying the patient's latest recorded vital parameters: Weight (kg), Blood Pressure (mmHg), Blood Sugar (mg/dL), Heart Rate (BPM), and Temperature (°C).
+   - Shows relative time of measurement (e.g. "Today at 08:30 AM", "Yesterday", or formatted date) and fallback indicators for unrecorded parameters.
+   - Prominently displays the mandatory medical disclaimer: vitals are recorded for informational and tracking purposes and do not replace professional diagnosis.
+
+2. **Vital Recording & Editing Modal (`HealthRecordForm.jsx`)**:
+   - Modal dialog with glassmorphism backdrop supporting both Create and Edit modes.
+   - Measurement date & time input with a convenient "Set to Now" quick button and future date prevention.
+   - Individual vital sign inputs with physiological range boundaries:
+     - Weight: 1 – 500 kg
+     - Blood Pressure: Systolic (40 – 300 mmHg) & Diastolic (30 – 200 mmHg) with strict consistency check (`systolic > diastolic`)
+     - Blood Sugar: 20 – 1000 mg/dL
+     - Heart Rate: 20 – 300 BPM
+     - Temperature: 25.0 – 45.0 °C
+   - Notes & symptoms textarea with live character counter (up to 1000 characters).
+   - Validates that at least one measurement is provided before submission.
+
+3. **Health Records History List (`HealthRecordList.jsx`)**:
+   - **Desktop View**: Clean, sortable-style table displaying Date & Time, Weight, Blood Pressure, Blood Sugar, Heart Rate, Temperature, Notes preview, and Edit/Delete actions.
+   - **Mobile View**: Stacked responsive cards with measurement badge chips for optimal readability on smaller screens.
+   - **Delete Confirmation Dialog**: Accessible safety modal preventing accidental deletions.
+
+4. **Health Tracking Page (`HealthTracking.jsx`)**:
+   - Accessible via `/health` and `/health-records`.
+   - Measurement type filter pills (`All Vitals`, `Weight`, `Blood Pressure`, `Blood Sugar`, `Heart Rate`, `Temperature`).
+   - Start Date and End Date range pickers with quick reset button.
+   - Server-side pagination controls (`Page X of Y`, `Previous`, `Next`).
+   - Real-time user feedback alerts for create, update, and delete actions.
+
+5. **Dashboard Integration (`Dashboard.jsx` & `Sidebar.jsx`)**:
+   - Live health records counter on the Dashboard statistics card linking directly to `/health`.
+   - Quick action link from "Health Trends" section to "Manage Vitals".
+   - "Health Tracking" navigation link in the application sidebar with `HeartPulse` icon.
+
+
