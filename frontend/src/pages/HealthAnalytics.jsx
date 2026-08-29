@@ -6,6 +6,7 @@ import {
   Plus,
   HeartPulse,
   Info,
+  Sparkles,
 } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -124,12 +125,24 @@ const HealthAnalytics = () => {
             Track changes in your recorded health measurements over time.
           </p>
         </div>
-        <Link to="/health">
-          <Button variant="primary" className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add Health Record
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2.5">
+          <Link to="/health-insights">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-1.5 border-teal-200 text-teal-700 hover:bg-teal-50"
+            >
+              <Sparkles className="h-4 w-4 text-teal-600" />
+              View Smart Insights
+            </Button>
+          </Link>
+          <Link to="/health">
+            <Button variant="primary" size="sm" className="flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Add Health Record
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filter Bar: Period and Metric Selectors */}

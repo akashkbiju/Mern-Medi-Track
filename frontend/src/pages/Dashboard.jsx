@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Pill, BellRing, Activity, FileText, CheckCircle2, Clock, AlertCircle, Flame, TrendingUp, HeartPulse } from 'lucide-react';
+import { Pill, BellRing, Activity, FileText, CheckCircle2, Clock, AlertCircle, Flame, TrendingUp, HeartPulse, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import StatCard from '../components/dashboard/StatCard';
 import Card from '../components/ui/Card';
@@ -9,7 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { getMedicines } from '../services/medicineApi';
 import { getUpcomingReminders } from '../services/reminderApi';
 import { getTodayMedicationLogs } from '../services/medicationLogApi';
-import { getWeeklyAdherence, getHealthSummary, getHealthAnalytics } from '../services/analyticsApi';
+import { getWeeklyAdherence, getHealthSummary, getHealthAnalytics, getHealthInsights } from '../services/analyticsApi';
 import { getHealthRecords } from '../services/healthApi';
 import DailyMedicationSchedule from '../components/medicine/DailyMedicationSchedule';
 
@@ -22,6 +22,7 @@ const Dashboard = () => {
   const [healthRecordsCount, setHealthRecordsCount] = useState(null);
   const [healthSummary, setHealthSummary] = useState(null);
   const [weightTrend, setWeightTrend] = useState([]);
+  const [insightsList, setInsightsList] = useState([]);
   const [todayLogStats, setTodayLogStats] = useState({
     total: 0,
     taken: 0,
@@ -97,6 +98,17 @@ const Dashboard = () => {
       .then((res) => {
         if (isMounted && res?.data?.trend) {
           setWeightTrend(res.data.trend);
+        }
+      })
+      .catch(() => {});
+
+    // Fetch 7-day smart health insights for dashboard preview
+    getHealthInsights({ period: '7d' })
+      .then((res) => {
+        if (isMounted && Array.isArray(res?.data?.insights)) {
+          // Keep at most 2-3 insights that are not merely generic missing data
+          const meaningful = res.data.insights.filter((i) => i.type !== 'missing_data');
+          setInsightsList((meaningful.length > 0 ? meaningful : res.data.insights).slice(0, 3));
         }
       })
       .catch(() => {});
@@ -383,6 +395,42 @@ const Dashboard = () => {
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </Card>
+
+          {/* Smart Health Insights Widget */}
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-teal-600" />
+                <h2 className="text-base font-bold text-slate-900">Health Insights</h2>
+              </div>
+              <Link
+                to="/health-insights"
+                className="text-xs font-semibold text-teal-600 hover:text-teal-700 hover:underline"
+              >
+                View All →
+              </Link>
+            </div>
+
+            {insightsList.length === 0 ? (
+              <p className="text-xs text-slate-400 py-2">
+                Log regular health records to view personalized patterns and trends.
+              </p>
+            ) : (
+              <div className="space-y-2.5">
+                {insightsList.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-xs"
+                  >
+                    <span className="font-semibold text-slate-800 block mb-0.5">
+                      {item.title}
+                    </span>
+                    <p className="text-slate-600 leading-snug">{item.message}</p>
+                  </div>
+                ))}
               </div>
             )}
           </Card>

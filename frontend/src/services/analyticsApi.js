@@ -62,6 +62,15 @@ export const getHealthSummary = async (params = {}) => {
   return response.data;
 };
 
+/**
+ * Fetch smart health insights and pattern analysis
+ * @param {Object} [params={}] - { period: '7d'|'30d'|'90d'|'custom', startDate, endDate }
+ */
+export const getHealthInsights = async (params = {}) => {
+  const response = await api.get('/analytics/health/insights', { params });
+  return response.data;
+};
+
 export default {
   getAdherenceSummary,
   getTodayAdherence,
@@ -70,4 +79,5 @@ export default {
   getCustomAdherence,
   getHealthAnalytics,
   getHealthSummary,
+  getHealthInsights,
 };

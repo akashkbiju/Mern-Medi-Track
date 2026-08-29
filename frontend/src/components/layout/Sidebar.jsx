@@ -7,6 +7,7 @@ import {
   BarChart2, 
   HeartPulse,
   TrendingUp,
+  Sparkles,
   FileText, 
   Stethoscope, 
   Settings, 
@@ -26,6 +27,7 @@ const Sidebar = () => {
     { name: 'Adherence', href: '/adherence', icon: BarChart2 },
     { name: 'Health Tracking', href: '/health', icon: HeartPulse },
     { name: 'Health Analytics', href: '/health-analytics', icon: TrendingUp },
+    { name: 'Health Insights', href: '/health-insights', icon: Sparkles },
     { name: 'Health Reports', href: '#', icon: FileText },
     { name: 'Doctors', href: '#', icon: Stethoscope },
   ];

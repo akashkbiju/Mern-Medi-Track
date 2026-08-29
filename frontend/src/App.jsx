@@ -12,6 +12,7 @@ import MedicationTracker from './pages/MedicationTracker';
 import Adherence from './pages/Adherence';
 import HealthTracking from './pages/HealthTracking';
 import HealthAnalytics from './pages/HealthAnalytics';
+import HealthInsights from './pages/HealthInsights';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { checkApiHealth } from './services/api';
@@ -147,6 +148,17 @@ function App() {
           }
         >
           <Route index element={<HealthAnalytics />} />
+        </Route>
+
+        <Route
+          path="/health-insights"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<HealthInsights />} />
         </Route>
       </Routes>
     </AuthProvider>
