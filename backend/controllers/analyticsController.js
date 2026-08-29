@@ -2,6 +2,7 @@ import { ApiResponse } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { adherenceService } from '../services/adherenceService.js';
 import { healthAnalyticsService } from '../services/healthAnalyticsService.js';
+import { healthInsightService } from '../services/healthInsightService.js';
 
 /**
  * Health & Adherence Analytics Controller
@@ -55,6 +56,18 @@ export const getHealthSummary = asyncHandler(async (req, res) => {
 });
 
 /**
+ * Get smart health insights based on recorded vitals and adherence
+ * GET /api/analytics/health/insights?period=7d|30d|90d|custom
+ */
+export const getHealthInsights = asyncHandler(async (req, res) => {
+  const data = await healthInsightService.generateHealthInsights(req.user.id, req.query);
+
+  return res.status(200).json(
+    new ApiResponse(true, 'Health insights generated successfully', data)
+  );
+});
+
+/**
  * Health trends route (alias for getHealthAnalytics)
  * GET /api/analytics/trends
  */
@@ -65,5 +78,6 @@ export default {
   getAdherenceAnalytics,
   getHealthAnalytics,
   getHealthSummary,
+  getHealthInsights,
   getHealthTrends,
 };

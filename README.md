@@ -820,4 +820,33 @@ MediTrack+ provides a comprehensive, clinical-grade **Health Analytics and Chart
 - **Multiple Daily Records**: Exact measurement timestamps (`date`, `time`, `dateTime`) are preserved chronologically rather than averaged, ensuring complete clinical fidelity for multiple readings on the same day.
 - **User Isolation & Security**: Protected by JWT authentication and scoped exclusively to `req.user.id`. Custom date ranges are validated with a 366-day safety boundary.
 
+## Step 17 — Smart Health Insights
+
+MediTrack+ provides an analytical, non-diagnostic **Smart Health Insights** engine that evaluates recorded health metrics and medication adherence to uncover meaningful trends, notable personal changes, and recording consistency patterns.
+
+### Clinical Safety & Non-Diagnostic Principles
+> **Disclaimer**: Smart Health Insights provides analytical summaries of user-recorded data and is not a medical diagnosis or treatment system. The engine never diagnoses conditions, prescribes therapies, or recommends alterations to medication dosages.
+
+### Core Capabilities
+1. **Personal Baseline Comparison**: Instead of generic medical reference ranges, insights compare each user's current measurements directly against their own previous records and baseline trends.
+2. **Trend Detection**:
+   - `0 records`: Identifies missing data gracefully without errors.
+   - `1 record`: Informs the user that a single point cannot form a trend.
+   - `2 records`: Generates a direct comparison of numerical change.
+   - `3+ records`: Evaluates directionality (`gradual upward trend`, `gradual downward trend`, or `relatively stable`).
+3. **Notable Change Detection**: Flags changes exceeding a configurable application threshold (`HEALTH_INSIGHT_CHANGE_THRESHOLD_PERCENT`, default 10%) with neutral `attention` severity.
+4. **Data Consistency Analysis**: Evaluates overall recording frequency across all vitals to encourage consistent logging.
+5. **Medication Adherence Context**: Synthesizes Step 13 adherence metrics alongside vital trends without implying false causal conclusions.
+
+### API Endpoint
+- `GET /api/analytics/health/insights`: Generates structured, on-demand health insights for authenticated patients.
+  - **Query Parameters**:
+    - `period`: `7d | 30d | 90d | custom` (default: `30d`)
+    - `startDate`: `YYYY-MM-DD` (required when `period === 'custom'`)
+    - `endDate`: `YYYY-MM-DD` (required when `period === 'custom'`)
+  - **Controlled Enums**:
+    - `category`: `weight | blood_pressure | blood_sugar | heart_rate | temperature | consistency | adherence | general`
+    - `type`: `trend | change | consistency | missing_data | adherence | summary`
+    - `severity`: `info | attention | positive`
+
 

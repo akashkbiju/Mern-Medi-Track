@@ -27,6 +27,9 @@ export const env = {
   REMINDER_LOOKAHEAD_HOURS: parseInt(process.env.REMINDER_LOOKAHEAD_HOURS || '24', 10),
   REMINDER_RECOVERY_MINUTES: parseInt(process.env.REMINDER_RECOVERY_MINUTES || '15', 10),
   REMINDER_GRACE_MINUTES: parseInt(process.env.REMINDER_GRACE_MINUTES || '60', 10),
+  HEALTH_INSIGHT_CHANGE_THRESHOLD_PERCENT: parseFloat(
+    process.env.HEALTH_INSIGHT_CHANGE_THRESHOLD_PERCENT || '10'
+  ),
   isProduction: process.env.NODE_ENV === 'production',
   isDevelopment: process.env.NODE_ENV !== 'production',
 };
