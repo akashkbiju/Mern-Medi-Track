@@ -18,7 +18,12 @@ import {
   AlertCircle,
   Loader2,
   UserCheck,
+  Bell,
 } from 'lucide-react';
+import {
+  getNotificationPreferences,
+  updateNotificationPreferences,
+} from '../services/notificationApi';
 
 const GENDER_OPTIONS = [
   { value: '', label: 'Select Gender' },
@@ -60,6 +65,15 @@ const Profile = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [statusMessage, setStatusMessage] = useState({ type: '', text: '' });
+  const [notificationPrefs, setNotificationPrefs] = useState({
+    medicationReminders: true,
+    missedMedication: true,
+    healthAlerts: true,
+    doctorUpdates: true,
+    reportReady: true,
+    email: false,
+    push: false,
+  });
 
   // Format date to YYYY-MM-DD for standard HTML5 date input
   const formatDateForInput = (dateVal) => {
@@ -97,11 +111,17 @@ const Profile = () => {
     const loadProfile = async () => {
       try {
         setLoading(true);
-        const response = await getUserProfile();
-        if (isMounted && response?.data?.user) {
-          populateFormData(response.data.user);
+        const [profileRes, prefRes] = await Promise.all([
+          getUserProfile(),
+          getNotificationPreferences().catch(() => null),
+        ]);
+        if (isMounted && profileRes?.data?.user) {
+          populateFormData(profileRes.data.user);
           // Sync with AuthContext in case of recent updates
-          updateUser(response.data.user);
+          updateUser(profileRes.data.user);
+        }
+        if (isMounted && prefRes?.data?.preferences) {
+          setNotificationPrefs(prefRes.data.preferences);
         }
       } catch (err) {
         if (isMounted) {
@@ -202,7 +222,13 @@ const Profile = () => {
         },
       };
 
-      const response = await updateUserProfile(payload);
+      const [response] = await Promise.all([
+        updateUserProfile(payload),
+        updateNotificationPreferences(notificationPrefs).catch((err) => {
+          console.warn('Failed saving notification preferences:', err.message);
+          return null;
+        }),
+      ]);
 
       if (response?.data?.user) {
         const updatedUser = response.data.user;
@@ -210,7 +236,7 @@ const Profile = () => {
         populateFormData(updatedUser);
         setStatusMessage({
           type: 'success',
-          text: 'Profile updated successfully!',
+          text: 'Profile and notification preferences updated successfully!',
         });
       }
     } catch (err) {
@@ -549,6 +575,217 @@ const Profile = () => {
               {errors.emergencyPhone && (
                 <p className="mt-1 text-xs text-red-600">{errors.emergencyPhone}</p>
               )}
+            </div>
+          </div>
+        </Card>
+
+        {/* Section 3: Notification Preferences */}
+        <Card className="border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mb-5 flex items-center gap-2.5 border-b border-slate-100 pb-4">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-50 text-teal-700">
+              <Bell className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">Notification Preferences</h3>
+              <p className="text-xs text-slate-500">
+                Choose which notifications you receive and configure alert channels
+              </p>
+            </div>
+          </div>
+
+          <div className="divide-y divide-slate-100">
+            {/* Medication Reminders Toggle */}
+            <div className="flex items-center justify-between py-3.5">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Medication Reminders</p>
+                <p className="text-xs text-slate-500">
+                  Receive alerts when it is time to take your scheduled medications.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={notificationPrefs.medicationReminders}
+                onClick={() =>
+                  setNotificationPrefs((prev) => ({
+                    ...prev,
+                    medicationReminders: !prev.medicationReminders,
+                  }))
+                }
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+                  notificationPrefs.medicationReminders ? 'bg-teal-600' : 'bg-slate-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    notificationPrefs.medicationReminders ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Missed Medication Alerts Toggle */}
+            <div className="flex items-center justify-between py-3.5">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Missed Medication Alerts</p>
+                <p className="text-xs text-slate-500">
+                  Get notified when a scheduled dose passes the grace period without being logged.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={notificationPrefs.missedMedication}
+                onClick={() =>
+                  setNotificationPrefs((prev) => ({
+                    ...prev,
+                    missedMedication: !prev.missedMedication,
+                  }))
+                }
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+                  notificationPrefs.missedMedication ? 'bg-teal-600' : 'bg-slate-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    notificationPrefs.missedMedication ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Health & Insights Alerts Toggle */}
+            <div className="flex items-center justify-between py-3.5">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Health Alerts & Observations</p>
+                <p className="text-xs text-slate-500">
+                  Alerts on noticeable metric changes and analytical health insights.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={notificationPrefs.healthAlerts}
+                onClick={() =>
+                  setNotificationPrefs((prev) => ({
+                    ...prev,
+                    healthAlerts: !prev.healthAlerts,
+                  }))
+                }
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+                  notificationPrefs.healthAlerts ? 'bg-teal-600' : 'bg-slate-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    notificationPrefs.healthAlerts ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Doctor Updates Toggle */}
+            <div className="flex items-center justify-between py-3.5">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Doctor & Provider Updates</p>
+                <p className="text-xs text-slate-500">
+                  Notifications regarding physician requests, notes, and connection status.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={notificationPrefs.doctorUpdates}
+                onClick={() =>
+                  setNotificationPrefs((prev) => ({
+                    ...prev,
+                    doctorUpdates: !prev.doctorUpdates,
+                  }))
+                }
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+                  notificationPrefs.doctorUpdates ? 'bg-teal-600' : 'bg-slate-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    notificationPrefs.doctorUpdates ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Report Ready Toggle */}
+            <div className="flex items-center justify-between py-3.5">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">Health Reports</p>
+                <p className="text-xs text-slate-500">
+                  Alerts when your scheduled health report or summary document is ready.
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={notificationPrefs.reportReady}
+                onClick={() =>
+                  setNotificationPrefs((prev) => ({
+                    ...prev,
+                    reportReady: !prev.reportReady,
+                  }))
+                }
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+                  notificationPrefs.reportReady ? 'bg-teal-600' : 'bg-slate-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                    notificationPrefs.reportReady ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Email Notifications (Provider Ready) */}
+            <div className="flex items-center justify-between py-3.5 opacity-70">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-slate-800">Email Notifications</p>
+                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 border border-slate-200">
+                    Not Configured
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Deliver scheduled dose reminders directly to your email inbox.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled
+                className="relative inline-flex h-6 w-11 shrink-0 cursor-not-allowed rounded-full border-2 border-transparent bg-slate-200"
+              >
+                <span className="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm translate-x-0" />
+              </button>
+            </div>
+
+            {/* Push Notifications (Provider Ready) */}
+            <div className="flex items-center justify-between py-3.5 opacity-70">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-slate-800">Push Notifications</p>
+                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600 border border-slate-200">
+                    Not Configured
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Instant mobile device and browser push reminders.
+                </p>
+              </div>
+              <button
+                type="button"
+                disabled
+                className="relative inline-flex h-6 w-11 shrink-0 cursor-not-allowed rounded-full border-2 border-transparent bg-slate-200"
+              >
+                <span className="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm translate-x-0" />
+              </button>
             </div>
           </div>
         </Card>

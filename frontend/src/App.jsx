@@ -13,10 +13,12 @@ import Adherence from './pages/Adherence';
 import HealthTracking from './pages/HealthTracking';
 import HealthAnalytics from './pages/HealthAnalytics';
 import HealthInsights from './pages/HealthInsights';
+import Notifications from './pages/Notifications';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { checkApiHealth } from './services/api';
 import { AuthProvider } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 
 function App() {
   useEffect(() => {
@@ -32,7 +34,8 @@ function App() {
 
   return (
     <AuthProvider>
-      <Routes>
+      <NotificationProvider>
+        <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
@@ -160,7 +163,19 @@ function App() {
         >
           <Route index element={<HealthInsights />} />
         </Route>
+
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Notifications />} />
+        </Route>
       </Routes>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

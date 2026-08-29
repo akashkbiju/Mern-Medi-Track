@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Pill, BellRing, Activity, FileText, CheckCircle2, Clock, AlertCircle, Flame, TrendingUp, HeartPulse, Sparkles } from 'lucide-react';
+import { Pill, BellRing, Activity, FileText, CheckCircle2, Clock, AlertCircle, Flame, TrendingUp, HeartPulse, Sparkles, Bell } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import StatCard from '../components/dashboard/StatCard';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../context/AuthContext';
+import { useNotifications } from '../context/NotificationContext';
 import { getMedicines } from '../services/medicineApi';
 import { getUpcomingReminders } from '../services/reminderApi';
 import { getTodayMedicationLogs } from '../services/medicationLogApi';
@@ -15,6 +16,7 @@ import DailyMedicationSchedule from '../components/medicine/DailyMedicationSched
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { recentNotifications, markAsRead } = useNotifications();
   const [activeCount, setActiveCount] = useState(null);
   const [upcomingReminders, setUpcomingReminders] = useState([]);
   const [loadingUpcoming, setLoadingUpcoming] = useState(true);
@@ -429,6 +431,50 @@ const Dashboard = () => {
                       {item.title}
                     </span>
                     <p className="text-slate-600 leading-snug">{item.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          {/* Recent Notifications Widget */}
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Bell className="h-4 w-4 text-teal-600" />
+                <h2 className="text-base font-bold text-slate-900">Notifications</h2>
+              </div>
+              <Link
+                to="/notifications"
+                className="text-xs font-semibold text-teal-600 hover:text-teal-700 hover:underline"
+              >
+                View All →
+              </Link>
+            </div>
+
+            {recentNotifications.length === 0 ? (
+              <p className="text-xs text-slate-400 py-2">
+                No active notifications. You're all caught up!
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {recentNotifications.slice(0, 3).map((notif) => (
+                  <div
+                    key={notif._id}
+                    onClick={() => markAsRead(notif._id)}
+                    className={`p-2.5 rounded-lg border text-xs cursor-pointer transition ${
+                      notif.isRead
+                        ? 'bg-slate-50 border-slate-100 text-slate-700'
+                        : 'bg-teal-50/40 border-teal-200/80 text-slate-900 font-medium'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold truncate">{notif.title}</span>
+                      {!notif.isRead && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-teal-500 shrink-0" />
+                      )}
+                    </div>
+                    <p className="text-slate-500 line-clamp-2 leading-relaxed">{notif.message}</p>
                   </div>
                 ))}
               </div>

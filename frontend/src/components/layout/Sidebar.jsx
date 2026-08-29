@@ -8,6 +8,7 @@ import {
   HeartPulse,
   TrendingUp,
   Sparkles,
+  Bell,
   FileText, 
   Stethoscope, 
   Settings, 
@@ -15,9 +16,11 @@ import {
   LogOut
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 const Sidebar = () => {
   const { logout } = useAuth();
+  const { unreadCount } = useNotifications();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -28,12 +31,13 @@ const Sidebar = () => {
     { name: 'Health Tracking', href: '/health', icon: HeartPulse },
     { name: 'Health Analytics', href: '/health-analytics', icon: TrendingUp },
     { name: 'Health Insights', href: '/health-insights', icon: Sparkles },
+    { name: 'Notifications', href: '/notifications', icon: Bell, badge: unreadCount },
     { name: 'Health Reports', href: '#', icon: FileText },
     { name: 'Doctors', href: '#', icon: Stethoscope },
   ];
 
   const secondaryNavigation = [
-    { name: 'Profile', href: '/profile', icon: User },
+    { name: 'Profile & Alerts', href: '/profile', icon: User },
     { name: 'Settings', href: '#', icon: Settings },
   ];
 
@@ -54,15 +58,20 @@ const Sidebar = () => {
                   <NavLink
                     to={item.href}
                     className={({ isActive }) =>
-                      `group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 ${
-                        isActive
+                      `group flex items-center gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 ${
+                        isActive && item.href !== '#'
                           ? 'bg-primary-light text-white'
                           : 'text-slate-300 hover:bg-primary-light hover:text-white'
                       }`
                     }
                   >
-                    <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
-                    {item.name}
+                    <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                    <span>{item.name}</span>
+                    {item.badge > 0 && (
+                      <span className="ml-auto rounded-full bg-teal-500/20 px-2 py-0.5 text-[11px] font-bold text-teal-300 ring-1 ring-inset ring-teal-500/30">
+                        {item.badge > 99 ? '99+' : item.badge}
+                      </span>
+                    )}
                   </NavLink>
                 </li>
               ))}
@@ -83,7 +92,7 @@ const Sidebar = () => {
                       }`
                     }
                   >
-                    <item.icon className="h-6 w-6 shrink-0" aria-hidden="true" />
+                    <item.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
                     {item.name}
                   </NavLink>
                 </li>
@@ -96,7 +105,7 @@ const Sidebar = () => {
               type="button"
               className="w-full text-left group -mx-2 flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-slate-300 hover:bg-red-500/10 hover:text-red-400 transition-colors"
             >
-              <LogOut className="h-6 w-6 shrink-0" aria-hidden="true" />
+              <LogOut className="h-5 w-5 shrink-0" aria-hidden="true" />
               Logout
             </button>
           </li>

@@ -849,4 +849,32 @@ MediTrack+ provides an analytical, non-diagnostic **Smart Health Insights** engi
     - `type`: `trend | change | consistency | missing_data | adherence | summary`
     - `severity`: `info | attention | positive`
 
+## Step 18 — Notification System
+
+MediTrack+ includes a robust, multi-channel **Notification System** that delivers timely medication reminders, missed dose alerts, and system notices directly within the web application while maintaining an extensible architecture prepared for external email and push delivery channels.
+
+### Core Capabilities
+1. **In-App Notifications**: Stored in MongoDB and accessible through an interactive notification bell with live unread badge counters, recent dropdown previews, and a dedicated `/notifications` management center.
+2. **Medication Reminder Integration**: Seamlessly connects with the Step 11 reminder engine to generate `medication_reminder` notifications for due doses.
+3. **Missed Medication Detection**: Automatically generates `missed_medication` notifications when a pending medication dose passes its scheduled grace period without being recorded as taken.
+4. **Idempotency & Duplicate Prevention**: Compound unique indexes (`{ user, relatedMedicine, type, scheduledFor, channel }`) and deterministic log identifiers prevent duplicate notifications if schedulers re-run.
+5. **Read / Unread State Management**: Supports marking individual notifications as read or unread, bulk marking all as read, and deleting notifications with strict user ownership validation.
+6. **Notification Preferences**: Patients can toggle alerts for medication reminders, missed doses, health observations, doctor updates, and reports via `/profile`.
+7. **Provider Architecture**: Clean provider abstraction layer (`inAppNotificationProvider`, `emailNotificationProvider`, `pushNotificationProvider`). Email and push notification delivery remain provider-ready and report `not_configured` unless explicitly enabled.
+8. **Clinical Safety Compliance**: Reminders and missed notifications strictly describe factual dose events and never recommend dosage changes, doubling up, or altering prescriptions.
+
+### API Endpoints
+- `GET /api/notifications`: Paginated list of notifications with filters (`read=true|false`, `type=...`, `page`, `limit`).
+- `GET /api/notifications/unread`: Retrieve the latest unread notifications for bell dropdown previews.
+- `GET /api/notifications/count`: Returns the total number of unread notifications for badge counters (`{ unreadCount }`).
+- `GET /api/notifications/:id`: Retrieve single notification details.
+- `PATCH /api/notifications/:id/read`: Mark single notification as read.
+- `PATCH /api/notifications/:id/unread`: Mark single notification as unread.
+- `PATCH /api/notifications/read-all`: Mark all unread notifications as read.
+- `DELETE /api/notifications/:id`: Delete a single notification.
+- `DELETE /api/notifications/read`: Delete all read notifications for the authenticated user.
+- `GET /api/users/notification-preferences`: Retrieve current user notification preferences.
+- `PATCH /api/users/notification-preferences`: Update user notification preferences with strict boolean validation.
+
+
 
