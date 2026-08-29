@@ -14,6 +14,7 @@ import {
   formatTime12h,
 } from '../utils/dateTime.js';
 import { scheduleService } from './scheduleService.js';
+import { notificationService } from './notificationService.js';
 
 /**
  * Medication Log Service
@@ -382,6 +383,35 @@ export const medicationLogService = {
           );
           if (updateResult.modifiedCount > 0) {
             markedMissedCount++;
+
+            // Step 18: Generate missed medication notification
+            try {
+              const medicine = await Medicine.findById(log.medicine).select('name dosage dosageUnit');
+              const medName = medicine?.name || 'medication';
+              const dosageStr = medicine?.dosage ? ` (${medicine.dosage} ${medicine.dosageUnit || ''})` : '';
+              const time12h = formatTime12h(log.scheduledTime);
+
+              await notificationService.createNotification({
+                user: log.user?._id || log.user,
+                type: 'missed_medication',
+                title: 'Missed Medication',
+                message: `You missed your scheduled dose of ${medName}${dosageStr} at ${time12h}.`,
+                relatedMedicine: log.medicine,
+                scheduledFor: scheduledUTC,
+                channel: 'in_app',
+                priority: 'normal',
+                metadata: {
+                  logId: log._id.toString(),
+                  medicineId: log.medicine?.toString(),
+                  scheduledDate: dateStr,
+                  scheduledTime: log.scheduledTime,
+                },
+              });
+            } catch (notifErr) {
+              logger.error(
+                `[MedicationLogService] Failed to create missed notification for log ${log._id}: ${notifErr.message}`
+              );
+            }
           }
         }
       } catch (logErr) {

@@ -113,6 +113,84 @@ export const userService = {
     }
     return sanitizeUser(user);
   },
+
+  /**
+   * Retrieve notification preferences for authenticated user
+   * @param {string} userId
+   * @returns {Promise<Object>}
+   */
+  getNotificationPreferences: async (userId) => {
+    const user = await User.findById(userId).select('notificationPreferences isActive');
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+    if (!user.isActive) {
+      throw new ApiError(403, 'Account is inactive');
+    }
+
+    return (
+      user.notificationPreferences || {
+        medicationReminders: true,
+        missedMedication: true,
+        healthAlerts: true,
+        doctorUpdates: true,
+        reportReady: true,
+        email: false,
+        push: false,
+      }
+    );
+  },
+
+  /**
+   * Update notification preferences for authenticated user
+   * Strict validation ensuring only allowed boolean preferences can be modified
+   * @param {string} userId
+   * @param {Object} preferences
+   * @returns {Promise<Object>}
+   */
+  updateNotificationPreferences: async (userId, preferences = {}) => {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError(404, 'User not found');
+    }
+    if (!user.isActive) {
+      throw new ApiError(403, 'Account is inactive');
+    }
+
+    if (!user.notificationPreferences) {
+      user.notificationPreferences = {
+        medicationReminders: true,
+        missedMedication: true,
+        healthAlerts: true,
+        doctorUpdates: true,
+        reportReady: true,
+        email: false,
+        push: false,
+      };
+    }
+
+    const allowedKeys = [
+      'medicationReminders',
+      'missedMedication',
+      'healthAlerts',
+      'doctorUpdates',
+      'reportReady',
+      'email',
+      'push',
+    ];
+
+    for (const key of Object.keys(preferences)) {
+      if (allowedKeys.includes(key)) {
+        if (typeof preferences[key] !== 'boolean') {
+          throw new ApiError(400, `Preference '${key}' must be a boolean value`);
+        }
+        user.notificationPreferences[key] = preferences[key];
+      }
+    }
+
+    await user.save();
+    return user.notificationPreferences;
+  },
 };
 
 export default userService;

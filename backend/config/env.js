@@ -30,6 +30,9 @@ export const env = {
   HEALTH_INSIGHT_CHANGE_THRESHOLD_PERCENT: parseFloat(
     process.env.HEALTH_INSIGHT_CHANGE_THRESHOLD_PERCENT || '10'
   ),
+  NOTIFICATION_POLL_INTERVAL: parseInt(process.env.NOTIFICATION_POLL_INTERVAL || '60000', 10),
+  EMAIL_NOTIFICATIONS_ENABLED: process.env.EMAIL_NOTIFICATIONS_ENABLED === 'true',
+  PUSH_NOTIFICATIONS_ENABLED: process.env.PUSH_NOTIFICATIONS_ENABLED === 'true',
   isProduction: process.env.NODE_ENV === 'production',
   isDevelopment: process.env.NODE_ENV !== 'production',
 };

@@ -64,6 +64,36 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    notificationPreferences: {
+      medicationReminders: {
+        type: Boolean,
+        default: true,
+      },
+      missedMedication: {
+        type: Boolean,
+        default: true,
+      },
+      healthAlerts: {
+        type: Boolean,
+        default: true,
+      },
+      doctorUpdates: {
+        type: Boolean,
+        default: true,
+      },
+      reportReady: {
+        type: Boolean,
+        default: true,
+      },
+      email: {
+        type: Boolean,
+        default: false,
+      },
+      push: {
+        type: Boolean,
+        default: false,
+      },
+    },
   },
   {
     timestamps: true,

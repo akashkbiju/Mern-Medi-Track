@@ -18,6 +18,7 @@ import {
   scheduleService,
   isMedicineScheduledForDate,
 } from './scheduleService.js';
+import { notificationService } from './notificationService.js';
 
 /**
  * Smart Medication Reminder Engine Service
@@ -87,58 +88,30 @@ export const reminderService = {
       throw new ApiError(500, 'Failed to compute exact reminder schedule timestamp');
     }
 
-    // 6. Check if reminder already exists (Idempotency check)
-    const existingReminder = await Notification.findOne({
-      user: userId,
-      relatedMedicine: medicineId,
-      type: 'medication_reminder',
-      scheduledFor: scheduledForUTC,
-    }).populate('relatedMedicine', 'name genericName dosage dosageUnit instructions');
-
-    if (existingReminder) {
-      return { reminder: existingReminder, created: false };
-    }
-
-    // 7. Format clean, professional reminder notification
+    // 6. Format clean, professional reminder notification
     const time12h = formatTime12h(scheduledTime);
     const title = `Medication Reminder: ${medicine.name}`;
     const instructionsText = medicine.instructions ? ` • ${medicine.instructions}` : '';
     const message = `It's time to take ${medicine.name} (${medicine.dosage} ${medicine.dosageUnit}) at ${time12h}${instructionsText}.`;
 
-    try {
-      const newReminder = await Notification.create({
-        user: userId,
-        type: 'medication_reminder',
-        title,
-        message,
-        relatedMedicine: medicine._id,
-        scheduledFor: scheduledForUTC,
-        isRead: false,
-        sentAt: null,
-      });
+    // 7. Route through centralized notificationService (with idempotency and preference checks)
+    const result = await notificationService.createNotification({
+      user: userId,
+      type: 'medication_reminder',
+      title,
+      message,
+      relatedMedicine: medicine._id,
+      scheduledFor: scheduledForUTC,
+      channel: 'in_app',
+      priority: 'normal',
+      metadata: {
+        medicineId: medicine._id.toString(),
+        scheduledDate: dateStr,
+        scheduledTime,
+      },
+    });
 
-      const populatedReminder = await Notification.findById(newReminder._id).populate(
-        'relatedMedicine',
-        'name genericName dosage dosageUnit instructions'
-      );
-
-      return { reminder: populatedReminder, created: true };
-    } catch (err) {
-      // Handle race condition or duplicate key (code 11000) gracefully
-      if (err.code === 11000) {
-        const raceReminder = await Notification.findOne({
-          user: userId,
-          relatedMedicine: medicineId,
-          type: 'medication_reminder',
-          scheduledFor: scheduledForUTC,
-        }).populate('relatedMedicine', 'name genericName dosage dosageUnit instructions');
-
-        if (raceReminder) {
-          return { reminder: raceReminder, created: false };
-        }
-      }
-      throw err;
-    }
+    return { reminder: result.notification, created: result.created };
   },
 
   /**

@@ -4,11 +4,14 @@ import {
   updateProfile,
   getAllUsers,
   getUserById,
+  getNotificationPreferences,
+  updateNotificationPreferences,
 } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
 import { validate } from '../middleware/validateMiddleware.js';
 import { updateProfileValidator } from '../validators/userValidator.js';
+import { updatePreferencesValidator } from '../validators/notificationValidator.js';
 
 const router = express.Router();
 
@@ -19,6 +22,19 @@ const router = express.Router();
  */
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, validate(updateProfileValidator), updateProfile);
+
+/**
+ * User Notification Preferences (Protected)
+ * GET /api/users/notification-preferences
+ * PATCH /api/users/notification-preferences
+ */
+router.get('/notification-preferences', protect, getNotificationPreferences);
+router.patch(
+  '/notification-preferences',
+  protect,
+  validate(updatePreferencesValidator),
+  updateNotificationPreferences
+);
 
 /**
  * Administrative & User Directory routes

@@ -52,4 +52,39 @@ export const getUserById = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, 'User retrieved successfully', { user }, 200);
 });
 
-export default { getProfile, updateProfile, getAllUsers, getUserById };
+/**
+ * Get notification preferences for authenticated user
+ * GET /api/users/notification-preferences
+ */
+export const getNotificationPreferences = asyncHandler(async (req, res) => {
+  const preferences = await userService.getNotificationPreferences(req.user.id);
+  return ApiResponse.success(
+    res,
+    'Notification preferences retrieved successfully',
+    { preferences },
+    200
+  );
+});
+
+/**
+ * Update notification preferences for authenticated user
+ * PATCH /api/users/notification-preferences
+ */
+export const updateNotificationPreferences = asyncHandler(async (req, res) => {
+  const preferences = await userService.updateNotificationPreferences(req.user.id, req.body);
+  return ApiResponse.success(
+    res,
+    'Notification preferences updated successfully',
+    { preferences },
+    200
+  );
+});
+
+export default {
+  getProfile,
+  updateProfile,
+  getAllUsers,
+  getUserById,
+  getNotificationPreferences,
+  updateNotificationPreferences,
+};

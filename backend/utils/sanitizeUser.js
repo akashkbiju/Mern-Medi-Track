@@ -30,6 +30,15 @@ export const sanitizeUser = (user) => {
           relationship: '',
           phone: typeof rawUser.emergencyContact === 'string' ? rawUser.emergencyContact : '',
         },
+    notificationPreferences: rawUser.notificationPreferences || {
+      medicationReminders: true,
+      missedMedication: true,
+      healthAlerts: true,
+      doctorUpdates: true,
+      reportReady: true,
+      email: false,
+      push: false,
+    },
     createdAt: rawUser.createdAt,
     updatedAt: rawUser.updatedAt,
   };
