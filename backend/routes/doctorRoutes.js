@@ -1,17 +1,17 @@
-import express from 'express';
 import {
   getDoctors,
-  connectDoctor,
+  getDoctorById,
   getDoctorProfile,
   updateDoctorProfile,
 } from '../controllers/doctorController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
 import { validate } from '../middleware/validateMiddleware.js';
+import { updateDoctorProfileValidator } from '../validators/doctorValidator.js';
 import {
-  updateDoctorProfileValidator,
-  doctorConnectionValidator,
-} from '../validators/doctorValidator.js';
+  doctorSearchValidator,
+  doctorIdParamValidator,
+} from '../validators/connectionValidator.js';
 
 const router = express.Router();
 
@@ -30,11 +30,11 @@ router.patch(
 );
 
 /**
- * Doctor Connectivity RESTful endpoints foundation (Future Step 20)
- * GET  /api/doctors
- * POST /api/doctors/connect
+ * Doctor Discovery & Directory (Protected for authenticated users)
+ * GET /api/doctors          - Search & list doctors
+ * GET /api/doctors/:doctorId - View public doctor professional details
  */
-router.get('/', getDoctors);
-router.post('/connect', validate(doctorConnectionValidator), connectDoctor);
+router.get('/', protect, validate(doctorSearchValidator), getDoctors);
+router.get('/:doctorId', protect, validate(doctorIdParamValidator), getDoctorById);
 
 export default router;

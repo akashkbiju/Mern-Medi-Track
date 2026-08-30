@@ -47,27 +47,35 @@ export const updateDoctorProfile = asyncHandler(async (req, res) => {
   );
 });
 
+import { connectionService } from '../services/connectionService.js';
+
 /**
- * Doctor Directory (Placeholder for future Step 20)
+ * Search and discover doctors
  * GET /api/doctors
  */
 export const getDoctors = asyncHandler(async (req, res) => {
-  return ApiResponse.error(
+  const result = await connectionService.searchDoctors(req.query);
+
+  return ApiResponse.success(
     res,
-    'Doctor directory functionality will be implemented in Step 20',
-    501
+    'Doctors retrieved successfully',
+    result,
+    200
   );
 });
 
 /**
- * Doctor Connection Request (Placeholder for future Step 20)
- * POST /api/doctors/connect
+ * Get public doctor profile details
+ * GET /api/doctors/:doctorId
  */
-export const connectDoctor = asyncHandler(async (req, res) => {
-  return ApiResponse.error(
+export const getDoctorById = asyncHandler(async (req, res) => {
+  const result = await connectionService.getDoctorById(req.params.doctorId);
+
+  return ApiResponse.success(
     res,
-    'Doctor connectivity will be implemented in Step 20',
-    501
+    'Doctor profile retrieved successfully',
+    result,
+    200
   );
 });
 
@@ -76,5 +84,5 @@ export default {
   getDoctorProfile,
   updateDoctorProfile,
   getDoctors,
-  connectDoctor,
+  getDoctorById,
 };
