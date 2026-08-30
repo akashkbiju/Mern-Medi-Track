@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import DoctorRegister from './pages/DoctorRegister';
 import Unauthorized from './pages/Unauthorized';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
@@ -14,6 +15,8 @@ import HealthTracking from './pages/HealthTracking';
 import HealthAnalytics from './pages/HealthAnalytics';
 import HealthInsights from './pages/HealthInsights';
 import Notifications from './pages/Notifications';
+import DoctorDashboard from './pages/DoctorDashboard';
+import DoctorProfile from './pages/DoctorProfile';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { checkApiHealth } from './services/api';
@@ -36,145 +39,170 @@ function App() {
     <AuthProvider>
       <NotificationProvider>
         <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/unauthorized" element={<Unauthorized />} />
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/doctor/register" element={<DoctorRegister />} />
+          <Route path="/unauthorized" element={<Unauthorized />} />
 
-        {/* Protected Dashboard & App Routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Dashboard />} />
-        </Route>
+          {/* Doctor Protected Routes */}
+          <Route
+            path="/doctor/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['doctor']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DoctorDashboard />} />
+          </Route>
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Profile />} />
-        </Route>
+          <Route
+            path="/doctor/profile"
+            element={
+              <ProtectedRoute allowedRoles={['doctor']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DoctorProfile />} />
+          </Route>
 
-        <Route
-          path="/medicines"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Medicines />} />
-        </Route>
+          {/* Patient Protected Dashboard & App Routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Dashboard />} />
+          </Route>
 
-        <Route
-          path="/reminders"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Reminders />} />
-        </Route>
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Profile />} />
+          </Route>
 
-        <Route
-          path="/tracker"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<MedicationTracker />} />
-        </Route>
+          <Route
+            path="/medicines"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Medicines />} />
+          </Route>
 
-        <Route
-          path="/adherence"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Adherence />} />
-        </Route>
+          <Route
+            path="/reminders"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Reminders />} />
+          </Route>
 
-        <Route
-          path="/health"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<HealthTracking />} />
-        </Route>
+          <Route
+            path="/tracker"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<MedicationTracker />} />
+          </Route>
 
-        <Route
-          path="/health-records"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<HealthTracking />} />
-        </Route>
+          <Route
+            path="/adherence"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Adherence />} />
+          </Route>
 
-        <Route
-          path="/analytics"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Adherence />} />
-        </Route>
+          <Route
+            path="/health"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<HealthTracking />} />
+          </Route>
 
-        <Route
-          path="/health-analytics"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<HealthAnalytics />} />
-        </Route>
+          <Route
+            path="/health-records"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<HealthTracking />} />
+          </Route>
 
-        <Route
-          path="/health-insights"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<HealthInsights />} />
-        </Route>
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Adherence />} />
+          </Route>
 
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<Notifications />} />
-        </Route>
-      </Routes>
+          <Route
+            path="/health-analytics"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<HealthAnalytics />} />
+          </Route>
+
+          <Route
+            path="/health-insights"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<HealthInsights />} />
+          </Route>
+
+          {/* Shared Protected Notification Route */}
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Notifications />} />
+          </Route>
+        </Routes>
       </NotificationProvider>
     </AuthProvider>
   );

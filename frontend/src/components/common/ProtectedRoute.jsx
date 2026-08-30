@@ -6,8 +6,8 @@ import { useAuth } from '../../context/AuthContext';
  * Route guard for authenticated endpoints
  * Redirects unauthenticated visitors to /login preserving intended destination
  */
-const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { user, isAuthenticated, loading } = useAuth();
   const location = useLocation();
 
   // Show a professional healthcare loading screen while session is being verified
@@ -30,6 +30,11 @@ const ProtectedRoute = ({ children }) => {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Role-based route guard
+  if (allowedRoles && allowedRoles.length > 0 && user && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/unauthorized" replace />;
   }
 
   return children ? children : <Outlet />;

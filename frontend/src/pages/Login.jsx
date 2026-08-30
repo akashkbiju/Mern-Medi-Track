@@ -60,13 +60,17 @@ const Login = () => {
     setServerError('');
 
     try {
-      await login({
+      const loggedInUser = await login({
         email: formData.email.trim(),
         password: formData.password,
       });
 
-      // On successful authentication, navigate to dashboard
-      navigate('/dashboard');
+      // Role-based destination redirect
+      if (loggedInUser?.role === 'doctor') {
+        navigate('/doctor/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       const responseData = err.response?.data;
       if (err.response?.status === 401) {
@@ -229,12 +233,20 @@ const Login = () => {
           </form>
 
           {/* Link to Register */}
-          <p className="mt-8 text-center text-sm text-slate-500">
-            Not a member?{' '}
-            <Link to="/register" className="font-semibold text-secondary hover:text-secondary-light">
-              Create an account
-            </Link>
-          </p>
+          <div className="mt-8 border-t border-slate-100 pt-6 text-center space-y-3">
+            <p className="text-sm text-slate-500">
+              Not a member?{' '}
+              <Link to="/register" className="font-semibold text-secondary hover:text-secondary-light">
+                Create an account
+              </Link>
+            </p>
+            <p className="text-xs text-slate-400">
+              Healthcare provider?{' '}
+              <Link to="/doctor/register" className="font-medium text-teal-600 hover:text-teal-700 underline">
+                Register as a Doctor
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

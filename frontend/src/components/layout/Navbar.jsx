@@ -160,7 +160,7 @@ const Navbar = () => {
 
         {/* Profile Avatar Link */}
         <Link
-          to="/profile"
+          to={user?.role === 'doctor' ? '/doctor/profile' : '/profile'}
           className="flex items-center space-x-2 border-l border-slate-200 pl-4 group hover:opacity-90 transition-opacity"
           title="View & Edit Profile"
         >

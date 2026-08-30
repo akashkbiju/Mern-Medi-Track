@@ -19,10 +19,12 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 
 const Sidebar = () => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const { unreadCount } = useNotifications();
 
-  const navigation = [
+  const isDoctor = user?.role === 'doctor';
+
+  const patientNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Medicines', href: '/medicines', icon: Pill },
     { name: 'Reminders', href: '/reminders', icon: BellRing },
@@ -36,10 +38,25 @@ const Sidebar = () => {
     { name: 'Doctors', href: '#', icon: Stethoscope },
   ];
 
-  const secondaryNavigation = [
+  const doctorNavigation = [
+    { name: 'Doctor Dashboard', href: '/doctor/dashboard', icon: LayoutDashboard },
+    { name: 'Doctor Profile', href: '/doctor/profile', icon: Stethoscope },
+    { name: 'Notifications', href: '/notifications', icon: Bell, badge: unreadCount },
+  ];
+
+  const navigation = isDoctor ? doctorNavigation : patientNavigation;
+
+  const patientSecondaryNav = [
     { name: 'Profile & Alerts', href: '/profile', icon: User },
     { name: 'Settings', href: '#', icon: Settings },
   ];
+
+  const doctorSecondaryNav = [
+    { name: 'Practice Profile', href: '/doctor/profile', icon: User },
+    { name: 'Settings', href: '#', icon: Settings },
+  ];
+
+  const secondaryNavigation = isDoctor ? doctorSecondaryNav : patientSecondaryNav;
 
   return (
     <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-primary px-6 pb-4">

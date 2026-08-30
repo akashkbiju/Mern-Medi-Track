@@ -876,5 +876,32 @@ MediTrack+ includes a robust, multi-channel **Notification System** that deliver
 - `GET /api/users/notification-preferences`: Retrieve current user notification preferences.
 - `PATCH /api/users/notification-preferences`: Update user notification preferences with strict boolean validation.
 
+## Step 19 — Doctor Registration, Login & Profile
+
+MediTrack+ includes a dedicated **Doctor Module** establishing the clinical identity foundation for healthcare providers. Doctors register through a dedicated verification pathway, authenticate using the unified JWT authentication system, manage practice credentials, and access a tailored physician portal.
+
+### Core Capabilities
+1. **Dedicated Doctor Registration**: Healthcare providers register via `POST /api/auth/doctor/register` with medical license number, specialization, hospital affiliation, years of clinical experience, bio, and consultation hours.
+2. **Server-Enforced Role & Verification**: The backend strictly sets `role: 'doctor'` and `isVerified: false`. Client-supplied role injection and self-verification flags are completely rejected.
+3. **Atomic User & Profile Creation**: Uses rollback protection to prevent orphan user accounts if profile creation fails.
+4. **Credential Uniqueness**: Both `email` and `licenseNumber` enforce strict database-level unique constraints, returning `409 Conflict` on duplicates.
+5. **Unified Authentication**: Doctors log in through standard `POST /api/auth/login`. The server returns signed JWTs containing `{ id, role: 'doctor' }` and user payloads including `isVerified` status.
+6. **Role-Based Routing & UI Isolation**: 
+   - `Login.jsx` inspects role and redirects doctors to `/doctor/dashboard` and patients to `/dashboard`.
+   - `ProtectedRoute` enforces `allowedRoles` guards: patients calling doctor routes or vice versa are redirected to `/unauthorized`.
+   - `Sidebar` dynamically displays physician navigation (`Doctor Dashboard`, `Doctor Profile`, `Notifications`) and hides patient-only medication/tracking links.
+7. **Doctor Profile Management**:
+   - `GET /api/doctors/profile`: Fetches combined user identity and clinical credentials.
+   - `PATCH /api/doctors/profile`: Allows updating permitted practice fields (`fullName`, `phone`, `specialization`, `hospital`, `experience`, `bio`, `consultationInfo`).
+   - Strictly preserves immutable security fields (`email`, `licenseNumber`, `isVerified`, `role`).
+8. **Clinical Safety & Verification Notice**: Doctors with `isVerified: false` receive a prominent amber verification notice explaining that credentials are queued for administrative review, while allowing practice configuration.
+
+### API Endpoints
+- `POST /api/auth/doctor/register`: Register new physician account (`201 Created`).
+- `POST /api/auth/login`: Authenticate doctor or patient, returning JWT and profile with `role` and `isVerified`.
+- `GET /api/doctors/profile`: Retrieve authenticated doctor's professional profile (Doctor role protected).
+- `PATCH /api/doctors/profile`: Update permitted contact and practice details (Doctor role protected).
+
+
 
 
