@@ -21,6 +21,7 @@ import DoctorDirectory from './pages/DoctorDirectory';
 import DoctorDetails from './pages/DoctorDetails';
 import MyDoctors from './pages/MyDoctors';
 import DoctorConnections from './pages/DoctorConnections';
+import DoctorPatientHealth from './pages/DoctorPatientHealth';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { checkApiHealth } from './services/api';
@@ -82,6 +83,17 @@ function App() {
             }
           >
             <Route index element={<DoctorConnections />} />
+          </Route>
+
+          <Route
+            path="/doctor/patients/:patientId/health"
+            element={
+              <ProtectedRoute allowedRoles={['doctor']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DoctorPatientHealth />} />
           </Route>
 
           {/* Patient Protected Dashboard & App Routes */}

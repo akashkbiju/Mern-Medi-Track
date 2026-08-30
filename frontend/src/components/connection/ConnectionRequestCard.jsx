@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import {
   User,
   Stethoscope,
@@ -8,6 +9,7 @@ import {
   UserX,
   Loader2,
   Clock,
+  Activity,
 } from 'lucide-react';
 import Button from '../ui/Button';
 import ConnectionStatusBadge from './ConnectionStatusBadge';
@@ -116,16 +118,28 @@ export const ConnectionRequestCard = ({
         )}
 
         {isDoctorRole && request.status === 'approved' && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onRevoke && onRevoke(request.id)}
-            disabled={actionLoading}
-            className="py-1.5 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition-colors flex items-center gap-1.5"
-          >
-            <UserX className="h-3.5 w-3.5" />
-            Revoke
-          </Button>
+          <div className="flex items-center gap-2">
+            <Link to={`/doctor/patients/${item?.id}/health`}>
+              <Button
+                variant="primary"
+                size="sm"
+                className="py-1.5 px-3 text-xs font-semibold flex items-center gap-1.5 bg-teal-600 hover:bg-teal-700 text-white shadow-2xs"
+              >
+                <Activity className="h-3.5 w-3.5" />
+                View Health Records
+              </Button>
+            </Link>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onRevoke && onRevoke(request.id)}
+              disabled={actionLoading}
+              className="py-1.5 px-3 text-xs font-semibold text-slate-600 border-slate-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 transition-colors flex items-center gap-1.5"
+            >
+              <UserX className="h-3.5 w-3.5" />
+              Revoke
+            </Button>
+          </div>
         )}
 
         {/* Patient Actions */}

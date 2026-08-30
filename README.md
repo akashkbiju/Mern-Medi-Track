@@ -953,6 +953,82 @@ MediTrack+ features a secure, explicit **Doctor-Patient Connection System** esta
 - `PATCH /api/connections/:id/reject`: Decline incoming connection request (Doctor only).
 - `PATCH /api/connections/:id/revoke`: Revoke approved connection (Shared, ownership protected).
 
+## Step 21 — Doctor Health-Record Access
+
+MediTrack+ enforces a strict, multi-layered authorization model governing clinical health data access. 
+
+> **Critical Security Principles:**
+> - **"Doctors can access patient health records only through an approved doctor-patient connection with health-record permission enabled."**
+> - **"Having the doctor role alone does not grant access to patient health data."**
+
+### 5-Layer Authorization Chain
+
+Access to patient health records is validated on every single protected request through the following immutable sequence:
+
+```
+JWT Authentication
+      ↓
+Doctor Role (role === 'doctor')
+      ↓
+Active User Verification (doctor & patient accounts active)
+      ↓
+Approved Connection (DoctorPatientConnection.status === 'approved')
+      ↓
+Health Records Permission (connection.permissions.healthRecords === true)
+      ↓
+Patient Health Data Access
+```
+
+If any link in this chain is missing, unverified, or revoked, access is immediately rejected with `403 Forbidden` (or `401 Unauthorized` for missing/invalid credentials).
+
+### Key Architectural Capabilities
+
+1. **Explicit Doctor-Patient Authorization (`connectionAccessService.js`)**:
+   - Reusable authorization helper verifies the exact physician-patient relationship before executing queries.
+   - Prevents Insecure Direct Object References (IDOR): Doctor A cannot access Patient B simply by altering URL parameters or request bodies.
+   - The requesting doctor's identity is strictly derived from `req.user.id` (JWT). Any client-supplied `doctorId` parameters in `body` or `query` are completely ignored.
+2. **Permission-Based Access Control**:
+   - Backed by `DoctorPatientConnection.permissions.healthRecords`.
+   - If a patient or the system sets `permissions.healthRecords = false`, doctor access is immediately denied with `"Health record access is disabled for this connection."`
+   - Only connected patients can update permissions via `PATCH /api/connections/:id/permissions`. Doctors cannot manipulate connection permissions.
+3. **Immediate Connection Revocation**:
+   - If either the patient or doctor revokes the connection, access to health records, summaries, and trend analytics is immediately cut off.
+   - No cached session can bypass a revoked connection status.
+4. **Controlled Data Exposure & Privacy**:
+   - Doctors receive only clinical vital logs: record ID, record date, weight, blood pressure, blood sugar, heart rate, temperature, clinical notes, and timestamps.
+   - Patient password hashes, login tokens, account security flags, and unrelated private data are strictly stripped.
+5. **Secure Health Analytics (`healthAnalyticsService.js`)**:
+   - Doctors access patient vital trends over 7d, 30d, 90d, or validated custom date ranges.
+   - Reuses existing Step 16 analytics logic while ensuring doctors can never call patient analytics endpoints with arbitrary user IDs.
+6. **Non-Diagnostic UI Standard**:
+   - Patient health displays show recorded measurements and statistical delta changes (latest, previous, change).
+   - The application does not render automatic diagnoses, treatment recommendations, or "normal/abnormal" badges.
+7. **Audit Logging**:
+   - Lightweight, security-focused access logs capture `{ doctorId, patientId, action, timestamp }`.
+   - Sensitive clinical values (blood pressure, blood sugar, notes) and auth tokens are never written to audit logs.
+
+### Doctor Health Record Endpoints
+
+| Method | Endpoint | Description | Access Control |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/api/doctors/patients/:patientId/health-records` | Paginated patient health records (filters: `page`, `limit`, `startDate`, `endDate`, `metric`) | Doctor + Approved Connection + `healthRecords: true` |
+| `GET` | `/api/doctors/patients/:patientId/health-summary` | Concise health KPI summary across 5 vital metrics and total record count | Doctor + Approved Connection + `healthRecords: true` |
+| `GET` | `/api/doctors/patients/:patientId/health-analytics` | Longitudinal vital trend analytics (`metric`, `period`, `startDate`, `endDate`) | Doctor + Approved Connection + `healthRecords: true` |
+| `GET` | `/api/doctors/patients/:patientId/context` | Doctor-patient connection status and permission metadata | Doctor + Approved Connection + `healthRecords: true` |
+| `PATCH` | `/api/connections/:id/permissions` | Update connection permissions (`healthRecords`, `medications`, `reports`) | Connected Patient only |
+
+### Frontend Physician Experience
+
+- **Doctor Connections (`/doctor/connections`)**: Approved patients have a prominent **View Health Records** action navigating to `/doctor/patients/:patientId/health`. Pending, rejected, or revoked requests do not expose health links.
+- **Patient Health Portal (`/doctor/patients/:patientId/health`)**:
+  - **Patient Header**: Displays patient name, connection status pill, and permission status badge (`Health Records Access: Enabled`).
+  - **Vital Summary Cards**: Reusable KPI cards showing latest recorded measurements, previous readings, and percentage changes.
+  - **Period Selector & Trend Charts**: Interactive 7d, 30d, 90d, and custom date range filters rendering Recharts longitudinal trends.
+  - **Health Record History**: Desktop table and mobile cards with date filtering, metric whitelist filter, pagination, and a detailed record inspection modal.
+  - **Access Denied & Empty States**: Clean, accessible state indicators for unauthorized access, revoked relationships, or empty telemetry periods.
+- **Doctor Dashboard (`/doctor/dashboard`)**: Displays active **Connected Patients** count and recent patient care roster with quick access to health records.
+
+
 
 
 

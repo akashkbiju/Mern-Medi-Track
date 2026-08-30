@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { getDoctorProfile } from '../services/doctorApi';
+import { getDoctorConnections } from '../services/connectionApi';
 import Button from '../components/ui/Button';
 
 const DoctorDashboard = () => {
@@ -27,14 +28,19 @@ const DoctorDashboard = () => {
   const { unreadCount } = useNotifications();
 
   const [profileData, setProfileData] = useState(null);
+  const [connectedPatients, setConnectedPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchDocData = async () => {
       try {
-        const res = await getDoctorProfile();
-        setProfileData(res.data);
+        const [profileRes, connRes] = await Promise.all([
+          getDoctorProfile(),
+          getDoctorConnections().catch(() => ({ data: [] })),
+        ]);
+        setProfileData(profileRes.data);
+        setConnectedPatients(connRes.data || []);
       } catch (err) {
         setError(err.response?.data?.message || 'Unable to load doctor dashboard information.');
       } finally {
@@ -145,7 +151,7 @@ const DoctorDashboard = () => {
       )}
 
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
         {/* Card 1: Account Status */}
         <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3">
           <div className="flex items-center justify-between text-slate-500">
@@ -223,7 +229,76 @@ const DoctorDashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Card 5: Connected Patients */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm space-y-3">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-semibold uppercase tracking-wider">Connected Patients</span>
+            <div className="p-2 rounded-xl bg-teal-50 text-teal-600">
+              <Users className="h-5 w-5" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-slate-900">{connectedPatients.length}</div>
+            <Link
+              to="/doctor/connections"
+              className="text-xs font-semibold text-teal-600 hover:text-teal-700 flex items-center gap-1 mt-1"
+            >
+              View Connections <ArrowUpRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+        </div>
       </div>
+
+      {/* Connected Patients Care Roster */}
+      {connectedPatients.length > 0 && (
+        <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Active Patient Care Roster</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Connected patients with authorized health telemetry access
+              </p>
+            </div>
+            <Link to="/doctor/connections">
+              <Button variant="outline" size="sm" className="text-xs font-semibold">
+                View All Connections
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {connectedPatients.slice(0, 3).map((conn) => (
+              <div
+                key={conn.id}
+                className="p-4 rounded-2xl bg-slate-50/75 border border-slate-200/80 flex items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-10 w-10 rounded-xl bg-teal-100 text-teal-800 font-bold flex items-center justify-center flex-shrink-0">
+                    {conn.patient?.fullName?.[0]?.toUpperCase() || 'P'}
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="text-xs font-bold text-slate-900 truncate">
+                      {conn.patient?.fullName || 'Patient'}
+                    </h4>
+                    <span className="text-[11px] text-teal-700 font-medium">Health Records Enabled</span>
+                  </div>
+                </div>
+
+                <Link to={`/doctor/patients/${conn.patient?.id}/health`}>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    className="py-1 px-2.5 text-xs font-semibold bg-teal-600 hover:bg-teal-700 text-white"
+                  >
+                    View Health
+                  </Button>
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Clinical Details & Practice Overview Card */}
       <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-sm space-y-6">
