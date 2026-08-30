@@ -17,6 +17,8 @@ import {
   registerValidator,
   loginValidator,
 } from '../validators/authValidator.js';
+import { registerDoctor } from '../controllers/doctorController.js';
+import { doctorRegisterValidator } from '../validators/doctorValidator.js';
 
 const router = express.Router();
 
@@ -28,6 +30,7 @@ const router = express.Router();
  * GET  /api/auth/me       - Retrieve authenticated user profile (Protected)
  */
 router.post('/register', authLimiter, validate(registerValidator), register);
+router.post('/doctor/register', authLimiter, validate(doctorRegisterValidator), registerDoctor);
 router.post('/login', authLimiter, validate(loginValidator), login);
 router.post('/logout', logout);
 router.get('/me', protect, getMe);

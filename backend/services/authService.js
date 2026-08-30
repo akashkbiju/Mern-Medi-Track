@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
+import DoctorProfile from '../models/DoctorProfile.js';
 import { ApiError } from '../utils/ApiError.js';
 import { generateToken } from '../utils/jwt.js';
 import { sanitizeUser } from '../utils/sanitizeUser.js';
@@ -89,10 +90,17 @@ export const authService = {
     // 5. Generate signed JWT token
     const token = generateToken(user);
 
-    // 6. Return token and safe user profile (excluding password)
+    // 6. Augment profile with verification state if doctor
+    const safeUser = sanitizeUser(user);
+    if (user.role === 'doctor') {
+      const docProfile = await DoctorProfile.findOne({ user: user._id });
+      safeUser.isVerified = docProfile ? docProfile.isVerified : false;
+    }
+
+    // 7. Return token and safe user profile (excluding password)
     return {
       token,
-      user: sanitizeUser(user),
+      user: safeUser,
     };
   },
 
@@ -105,7 +113,13 @@ export const authService = {
       throw new ApiError(404, 'User not found');
     }
 
-    return sanitizeUser(user);
+    const safeUser = sanitizeUser(user);
+    if (user.role === 'doctor') {
+      const docProfile = await DoctorProfile.findOne({ user: user._id });
+      safeUser.isVerified = docProfile ? docProfile.isVerified : false;
+    }
+
+    return safeUser;
   },
 };
 
