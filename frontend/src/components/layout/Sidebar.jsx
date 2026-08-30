@@ -13,6 +13,8 @@ import {
   Stethoscope, 
   Settings, 
   User,
+  Users,
+  UserCheck,
   LogOut
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -33,14 +35,16 @@ const Sidebar = () => {
     { name: 'Health Tracking', href: '/health', icon: HeartPulse },
     { name: 'Health Analytics', href: '/health-analytics', icon: TrendingUp },
     { name: 'Health Insights', href: '/health-insights', icon: Sparkles },
+    { name: 'Find a Doctor', href: '/doctors', icon: Stethoscope },
+    { name: 'My Doctors', href: '/my-doctors', icon: UserCheck },
     { name: 'Notifications', href: '/notifications', icon: Bell, badge: unreadCount },
     { name: 'Health Reports', href: '#', icon: FileText },
-    { name: 'Doctors', href: '#', icon: Stethoscope },
   ];
 
   const doctorNavigation = [
     { name: 'Doctor Dashboard', href: '/doctor/dashboard', icon: LayoutDashboard },
     { name: 'Doctor Profile', href: '/doctor/profile', icon: Stethoscope },
+    { name: 'Connections', href: '/doctor/connections', icon: Users },
     { name: 'Notifications', href: '/notifications', icon: Bell, badge: unreadCount },
   ];
 

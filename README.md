@@ -902,6 +902,58 @@ MediTrack+ includes a dedicated **Doctor Module** establishing the clinical iden
 - `GET /api/doctors/profile`: Retrieve authenticated doctor's professional profile (Doctor role protected).
 - `PATCH /api/doctors/profile`: Update permitted contact and practice details (Doctor role protected).
 
+## Step 20 — Doctor-Patient Connection System
+
+MediTrack+ features a secure, explicit **Doctor-Patient Connection System** establishing verified clinical relationships. Patients discover physicians, review professional qualifications, and initiate connection requests. Doctors review incoming patient requests, manage approvals, and maintain an active care roster.
+
+> **Clinical Security Notice:** Creating a doctor-patient connection does not by itself expose patient medical records. Medical-data access is implemented separately with explicit authorization in future steps.
+
+### Core Capabilities
+1. **Doctor Discovery & Search**:
+   - `GET /api/doctors`: Controlled, case-insensitive search across doctor names, specializations, and hospital affiliations with pagination.
+   - Prevents MongoDB operator injection and exposes only safe public professional information (`id`, `fullName`, `specialization`, `hospital`, `experience`, `bio`, `isVerified`, `consultationInfo`).
+   - Private contact details, password hashes, and patient records are strictly excluded.
+   - `GET /api/doctors/:doctorId`: Secure public physician profile lookup.
+2. **Patient-Initiated Connection Workflow**:
+   - `POST /api/connections`: Authenticated patients initiate connection requests specifying `{ doctorId }`. Rejects self-connection and unverified/inactive targets.
+   - Duplicate prevention: Returns `409 Conflict` if a request is already pending or approved.
+   - Reuse lifecycle: Previously rejected or revoked requests transition back to `pending`, resetting request timestamps and preserving relationship history.
+3. **Doctor Review & Response**:
+   - `GET /api/connections/doctor/requests`: Doctors view incoming pending requests with basic patient identification. NO patient health data is exposed.
+   - `PATCH /api/connections/:id/accept`: Target doctor accepts the request, transitioning status to `approved` and timestamping `approvedAt`.
+   - `PATCH /api/connections/:id/reject`: Target doctor declines the request, transitioning status to `rejected` while preserving document history.
+4. **Cancellation & Revocation**:
+   - `PATCH /api/connections/:id/cancel`: Patient cancels a pending request, transitioning status to `revoked`.
+   - `PATCH /api/connections/:id/revoke`: Either party revokes an active connection with strict ownership checks.
+5. **Care Team Management**:
+   - `GET /api/connections/patient/pending`: Patient views active requests awaiting review.
+   - `GET /api/connections/patient/connected`: Patient views active connected physicians.
+   - `GET /api/connections/doctor/connected`: Doctor views active connected patients roster.
+   - `GET /api/connections/status/:doctorId`: Real-time status lookup (`none`, `pending`, `approved`, `rejected`, `revoked`).
+6. **Automated In-App Notifications**:
+   - Sends `doctor_request` notifications to physicians when patients request connections.
+   - Sends `doctor_approved` or `doctor_rejected` notifications to patients upon physician review.
+7. **Frontend Physician Network Pages**:
+   - `/doctors`: Doctor Directory with search, specialty filtering, hospital filtering, and one-click connection requests.
+   - `/doctors/:doctorId`: Detailed physician profile page.
+   - `/my-doctors`: Patient Care Team center with Connected Doctors and Pending Requests.
+   - `/doctor/connections`: Physician portal for reviewing pending invitations and managing patient roster.
+
+### API Endpoints
+- `GET /api/doctors`: Search and list eligible physicians (Protected).
+- `GET /api/doctors/:doctorId`: Retrieve safe public doctor profile (Protected).
+- `POST /api/connections`: Send connection request to doctor (Patient only).
+- `GET /api/connections/status/:doctorId`: Check relationship status with doctor (Patient only).
+- `GET /api/connections/patient/pending`: List patient's pending connection requests (Patient only).
+- `GET /api/connections/patient/connected`: List patient's approved connected doctors (Patient only).
+- `PATCH /api/connections/:id/cancel`: Cancel pending connection request (Patient only).
+- `GET /api/connections/doctor/requests`: View incoming connection requests (Doctor only).
+- `GET /api/connections/doctor/connected`: View connected patient roster (Doctor only).
+- `PATCH /api/connections/:id/accept`: Accept incoming connection request (Doctor only).
+- `PATCH /api/connections/:id/reject`: Decline incoming connection request (Doctor only).
+- `PATCH /api/connections/:id/revoke`: Revoke approved connection (Shared, ownership protected).
+
+
 
 
 

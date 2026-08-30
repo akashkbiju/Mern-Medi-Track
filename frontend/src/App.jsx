@@ -17,6 +17,10 @@ import HealthInsights from './pages/HealthInsights';
 import Notifications from './pages/Notifications';
 import DoctorDashboard from './pages/DoctorDashboard';
 import DoctorProfile from './pages/DoctorProfile';
+import DoctorDirectory from './pages/DoctorDirectory';
+import DoctorDetails from './pages/DoctorDetails';
+import MyDoctors from './pages/MyDoctors';
+import DoctorConnections from './pages/DoctorConnections';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { checkApiHealth } from './services/api';
@@ -67,6 +71,17 @@ function App() {
             }
           >
             <Route index element={<DoctorProfile />} />
+          </Route>
+
+          <Route
+            path="/doctor/connections"
+            element={
+              <ProtectedRoute allowedRoles={['doctor']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DoctorConnections />} />
           </Route>
 
           {/* Patient Protected Dashboard & App Routes */}
@@ -189,6 +204,39 @@ function App() {
             }
           >
             <Route index element={<HealthInsights />} />
+          </Route>
+
+          <Route
+            path="/doctors"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DoctorDirectory />} />
+          </Route>
+
+          <Route
+            path="/doctors/:doctorId"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DoctorDetails />} />
+          </Route>
+
+          <Route
+            path="/my-doctors"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<MyDoctors />} />
           </Route>
 
           {/* Shared Protected Notification Route */}
