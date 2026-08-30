@@ -197,6 +197,11 @@ export const connectionService = {
       connection.requestedAt = new Date();
       connection.approvedAt = undefined;
       connection.revokedAt = undefined;
+      connection.permissions = {
+        medications: false,
+        healthRecords: false,
+        reports: false,
+      };
       await connection.save();
     } else {
       // Create new connection document
@@ -455,6 +460,11 @@ export const connectionService = {
 
     connection.status = 'approved';
     connection.approvedAt = new Date();
+    connection.permissions = {
+      medications: true,
+      healthRecords: true,
+      reports: true,
+    };
     await connection.save();
 
     // Fetch doctor name for notification
@@ -564,6 +574,46 @@ export const connectionService = {
     connection.revokedAt = new Date();
     await connection.save();
 
+    return connection;
+  },
+
+  /**
+   * Update permissions for an approved connection (callable by the connected patient)
+   *
+   * @param {string} patientId - Authenticated patient ID
+   * @param {string} connectionId - Connection document ID
+   * @param {Object} permissions - { healthRecords, medications, reports }
+   * @returns {Promise<Object>} Updated connection
+   */
+  updateConnectionPermissions: async (patientId, connectionId, permissions = {}) => {
+    if (!connectionId || !mongoose.Types.ObjectId.isValid(connectionId)) {
+      throw new ApiError(400, 'Invalid connection ID format');
+    }
+
+    const connection = await DoctorPatientConnection.findById(connectionId);
+    if (!connection) {
+      throw new ApiError(404, 'Connection record not found');
+    }
+
+    if (connection.patient.toString() !== patientId.toString()) {
+      throw new ApiError(403, 'Only the connected patient can modify permissions');
+    }
+
+    if (connection.status !== 'approved') {
+      throw new ApiError(400, 'Permissions can only be updated for approved connections');
+    }
+
+    if (typeof permissions.healthRecords === 'boolean') {
+      connection.permissions.healthRecords = permissions.healthRecords;
+    }
+    if (typeof permissions.medications === 'boolean') {
+      connection.permissions.medications = permissions.medications;
+    }
+    if (typeof permissions.reports === 'boolean') {
+      connection.permissions.reports = permissions.reports;
+    }
+
+    await connection.save();
     return connection;
   },
 };

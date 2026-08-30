@@ -10,6 +10,7 @@ import {
   acceptRequest,
   rejectRequest,
   revoke,
+  updatePermissions,
 } from '../controllers/connectionController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
@@ -50,6 +51,13 @@ router.patch(
   authorizeRoles('patient'),
   validate(connectionIdParamValidator),
   cancelRequest
+);
+
+router.patch(
+  '/:id/permissions',
+  authorizeRoles('patient'),
+  validate(connectionIdParamValidator),
+  updatePermissions
 );
 
 /**

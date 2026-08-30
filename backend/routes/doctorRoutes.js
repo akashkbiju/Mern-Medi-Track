@@ -1,9 +1,16 @@
+import express from 'express';
 import {
   getDoctors,
   getDoctorById,
   getDoctorProfile,
   updateDoctorProfile,
 } from '../controllers/doctorController.js';
+import {
+  getPatientHealthRecords,
+  getPatientHealthSummary,
+  getPatientHealthAnalytics,
+  getPatientContext,
+} from '../controllers/doctorHealthController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
 import { validate } from '../middleware/validateMiddleware.js';
@@ -12,6 +19,11 @@ import {
   doctorSearchValidator,
   doctorIdParamValidator,
 } from '../validators/connectionValidator.js';
+import {
+  patientIdParamValidator,
+  doctorHealthRecordsQueryValidator,
+  doctorHealthAnalyticsQueryValidator,
+} from '../validators/doctorHealthValidator.js';
 
 const router = express.Router();
 
@@ -27,6 +39,44 @@ router.patch(
   authorizeRoles('doctor'),
   validate(updateDoctorProfileValidator),
   updateDoctorProfile
+);
+
+/**
+ * Step 21: Doctor Connected-Patient Health Record Access (Doctor Role Protected)
+ * Enforces 5-layer authorization chain:
+ * JWT Auth -> Doctor Role -> Active Accounts -> Approved Connection -> healthRecords Permission -> Data
+ * Note: Placed BEFORE /:doctorId so 'patients' is not treated as a doctor ID parameter.
+ */
+router.get(
+  '/patients/:patientId/health-records',
+  protect,
+  authorizeRoles('doctor'),
+  validate(doctorHealthRecordsQueryValidator),
+  getPatientHealthRecords
+);
+
+router.get(
+  '/patients/:patientId/health-summary',
+  protect,
+  authorizeRoles('doctor'),
+  validate(patientIdParamValidator),
+  getPatientHealthSummary
+);
+
+router.get(
+  '/patients/:patientId/health-analytics',
+  protect,
+  authorizeRoles('doctor'),
+  validate(doctorHealthAnalyticsQueryValidator),
+  getPatientHealthAnalytics
+);
+
+router.get(
+  '/patients/:patientId/context',
+  protect,
+  authorizeRoles('doctor'),
+  validate(patientIdParamValidator),
+  getPatientContext
 );
 
 /**

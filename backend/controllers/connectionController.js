@@ -142,6 +142,24 @@ export const revoke = asyncHandler(async (req, res) => {
   );
 });
 
+/**
+ * Patient updates connection permissions
+ * PATCH /api/connections/:id/permissions
+ */
+export const updatePermissions = asyncHandler(async (req, res) => {
+  const result = await connectionService.updateConnectionPermissions(
+    req.user.id,
+    req.params.id,
+    req.body.permissions
+  );
+  return ApiResponse.success(
+    res,
+    'Connection permissions updated successfully',
+    result,
+    200
+  );
+});
+
 export default {
   sendRequest,
   getStatus,
@@ -153,4 +171,5 @@ export default {
   acceptRequest,
   rejectRequest,
   revoke,
+  updatePermissions,
 };
