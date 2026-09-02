@@ -40,6 +40,16 @@ export const updateDoctorProfile = async (updateData) => {
   return response.data;
 };
 
+// Step 22: Clinical Notes and Patient Recommendations
+export {
+  createDoctorNote,
+  getDoctorNotes,
+  getDoctorNote,
+  updateDoctorNote,
+  deleteDoctorNote,
+  getDoctorRecommendations,
+} from './doctorNotesApi';
+
 export default {
   registerDoctor,
   getDoctorProfile,

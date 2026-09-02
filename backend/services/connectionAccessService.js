@@ -84,6 +84,85 @@ export const connectionAccessService = {
       doctor,
     };
   },
+
+  /**
+   * Verifies an authenticated doctor can access and manage notes for a connected patient.
+   * Enforces 5-layer authorization:
+   * 1. Valid doctor and patient ObjectIds
+   * 2. Active doctor account with role 'doctor'
+   * 3. Active patient account with role 'patient'
+   * 4. Approved connection between doctor and patient
+   * 5. Notes permission enabled (defaults to true if undefined)
+   *
+   * @param {string} doctorId - Authenticated doctor ID (from req.user.id)
+   * @param {string} patientId - Target patient ID (from route params)
+   * @returns {Promise<{ connection: Object, patient: Object, doctor: Object }>}
+   */
+  canDoctorAccessPatientNotes: async (doctorId, patientId) => {
+    // 1. Strict ObjectId validation
+    if (!doctorId || !mongoose.Types.ObjectId.isValid(doctorId)) {
+      throw new ApiError(400, 'Invalid doctor ID format');
+    }
+    if (!patientId || !mongoose.Types.ObjectId.isValid(patientId)) {
+      throw new ApiError(400, 'Invalid patient ID format');
+    }
+
+    const doctorIdStr = doctorId.toString();
+    const patientIdStr = patientId.toString();
+
+    // Prevent self-connection lookup
+    if (doctorIdStr === patientIdStr) {
+      throw new ApiError(403, 'A doctor cannot manage notes for themselves');
+    }
+
+    // 2. Verify doctor account is active with role 'doctor'
+    const doctor = await User.findById(doctorIdStr).select('fullName email role isActive');
+    if (!doctor || doctor.role !== 'doctor' || !doctor.isActive) {
+      throw new ApiError(403, 'Doctor account is not active or authorized');
+    }
+
+    // 3. Verify patient account exists and is active
+    const patient = await User.findById(patientIdStr).select(
+      'fullName email role isActive'
+    );
+    if (!patient || patient.role !== 'patient' || !patient.isActive) {
+      throw new ApiError(404, 'Patient not found or account is inactive');
+    }
+
+    // 4. Find connection record between this doctor and patient
+    const connection = await DoctorPatientConnection.findOne({
+      doctor: doctorIdStr,
+      patient: patientIdStr,
+    });
+
+    if (!connection) {
+      throw new ApiError(403, 'No connection exists with this patient.');
+    }
+
+    // 5. Verify connection status is strictly 'approved'
+    if (connection.status !== 'approved') {
+      if (connection.status === 'revoked') {
+        throw new ApiError(403, 'Connection with this patient has been revoked.');
+      }
+      if (connection.status === 'rejected') {
+        throw new ApiError(403, 'Connection request with this patient was rejected.');
+      }
+      throw new ApiError(403, 'Connection with this patient is not approved.');
+    }
+
+    // 6. Verify notes permission is enabled (safe default if legacy connection)
+    if (connection.permissions && connection.permissions.notes === false) {
+      throw new ApiError(403, 'Notes and recommendations permission is disabled for this connection.');
+    }
+
+    return {
+      connection,
+      patient,
+      doctor,
+    };
+  },
 };
+
+export const canDoctorAccessPatientNotes = connectionAccessService.canDoctorAccessPatientNotes;
 
 export default connectionAccessService;

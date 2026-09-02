@@ -24,6 +24,19 @@ import {
   doctorHealthRecordsQueryValidator,
   doctorHealthAnalyticsQueryValidator,
 } from '../validators/doctorHealthValidator.js';
+import {
+  createDoctorNote,
+  getDoctorNotes,
+  getDoctorNoteById,
+  updateDoctorNote,
+  deleteDoctorNote,
+} from '../controllers/doctorNoteController.js';
+import {
+  createDoctorNoteValidator,
+  updateDoctorNoteValidator,
+  doctorNotesQueryValidator,
+  doctorNoteParamsValidator,
+} from '../validators/doctorNoteValidator.js';
 
 const router = express.Router();
 
@@ -77,6 +90,50 @@ router.get(
   authorizeRoles('doctor'),
   validate(patientIdParamValidator),
   getPatientContext
+);
+
+/**
+ * Step 22: Doctor Notes & Recommendations (Doctor Role Protected)
+ * Enforces 5-layer authorization and private note isolation.
+ */
+router.post(
+  '/patients/:patientId/notes',
+  protect,
+  authorizeRoles('doctor'),
+  validate(createDoctorNoteValidator),
+  createDoctorNote
+);
+
+router.get(
+  '/patients/:patientId/notes',
+  protect,
+  authorizeRoles('doctor'),
+  validate(doctorNotesQueryValidator),
+  getDoctorNotes
+);
+
+router.get(
+  '/patients/:patientId/notes/:noteId',
+  protect,
+  authorizeRoles('doctor'),
+  validate(doctorNoteParamsValidator),
+  getDoctorNoteById
+);
+
+router.patch(
+  '/patients/:patientId/notes/:noteId',
+  protect,
+  authorizeRoles('doctor'),
+  validate(updateDoctorNoteValidator),
+  updateDoctorNote
+);
+
+router.delete(
+  '/patients/:patientId/notes/:noteId',
+  protect,
+  authorizeRoles('doctor'),
+  validate(doctorNoteParamsValidator),
+  deleteDoctorNote
 );
 
 /**
