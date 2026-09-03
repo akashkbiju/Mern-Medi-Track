@@ -40,7 +40,7 @@ const Sidebar = () => {
     { name: 'My Doctors', href: '/my-doctors', icon: UserCheck },
     { name: 'Recommendations', href: '/doctor-recommendations', icon: ClipboardList },
     { name: 'Notifications', href: '/notifications', icon: Bell, badge: unreadCount },
-    { name: 'Health Reports', href: '#', icon: FileText },
+    { name: 'Health Reports', href: '/reports', icon: FileText },
   ];
 
   const doctorNavigation = [
