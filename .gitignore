@@ -121,3 +121,8 @@ dist
 # Vite output
 dist/
 build/
+
+# Generated PDF Storage
+*.pdf
+storage/
+backend/storage/

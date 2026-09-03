@@ -16,11 +16,13 @@ import {
   TrendingUp,
   CheckCircle2,
   Stethoscope,
+  Download,
 } from 'lucide-react';
 import {
   getReports,
   generateReport,
   getReportById,
+  downloadReportPdf,
 } from '../services/reportApi';
 import Button from '../components/ui/Button';
 
@@ -56,6 +58,7 @@ export const HealthReports = () => {
   const [selectedReport, setSelectedReport] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [downloadingId, setDownloadingId] = useState(null);
 
   // Form State for Generate
   const [generateConfig, setGenerateConfig] = useState({
@@ -147,6 +150,34 @@ export const HealthReports = () => {
       });
     } finally {
       setViewLoading(false);
+    }
+  };
+
+  // Download PDF Report
+  const handleDownloadPdf = async (reportId, e) => {
+    if (e) e.stopPropagation();
+    setDownloadingId(reportId);
+    try {
+      const blob = await downloadReportPdf(reportId);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `MediTrack-Report-${reportId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      setFeedback({
+        type: 'success',
+        message: 'PDF report downloaded successfully.',
+      });
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to download PDF report.',
+      });
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -310,6 +341,20 @@ export const HealthReports = () => {
                 </div>
 
                 <div className="flex items-center gap-2 self-end sm:self-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => handleDownloadPdf(rpt._id, e)}
+                    disabled={downloadingId === rpt._id}
+                    className="py-1.5 px-3 text-xs font-semibold flex items-center gap-1.5 text-slate-700 hover:text-teal-700 hover:bg-slate-50"
+                  >
+                    {downloadingId === rpt._id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Download className="h-3.5 w-3.5" />
+                    )}
+                    <span>PDF</span>
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -651,13 +696,34 @@ export const HealthReports = () => {
               <span className="text-slate-400 italic">
                 Compiled by MediTrack+ Healthcare System
               </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectedReport(null)}
-              >
-                Close Report
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={(e) => handleDownloadPdf(selectedReport._id, e)}
+                  disabled={downloadingId === selectedReport._id}
+                  className="flex items-center gap-1.5 py-1.5 px-3.5 text-xs font-semibold"
+                >
+                  {downloadingId === selectedReport._id ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-3.5 w-3.5" />
+                      Download PDF
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedReport(null)}
+                >
+                  Close Report
+                </Button>
+              </div>
             </div>
           </div>
         </div>

@@ -52,9 +52,40 @@ export const getReportById = async (reportId) => {
   return response.data;
 };
 
+/**
+ * Download report as PDF attachment (blob)
+ * GET /api/reports/:id/download
+ *
+ * @param {string} reportId - Report ObjectId
+ * @returns {Promise<Blob>} PDF Blob
+ */
+export const downloadReportPdf = async (reportId) => {
+  const response = await api.get(`/reports/${reportId}/download`, {
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
+/**
+ * Get report PDF blob for preview/inline display
+ * GET /api/reports/:id/pdf
+ *
+ * @param {string} reportId - Report ObjectId
+ * @returns {Promise<Blob>} PDF Blob
+ */
+export const getReportPdfBlob = async (reportId) => {
+  const response = await api.get(`/reports/${reportId}/pdf`, {
+    responseType: 'blob',
+  });
+  return response.data;
+};
+
 export default {
   generateReport,
   getReports,
   getLatestReport,
   getReportById,
+  downloadReportPdf,
+  getReportPdfBlob,
 };
+
