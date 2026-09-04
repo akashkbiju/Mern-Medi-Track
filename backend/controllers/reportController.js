@@ -1,4 +1,5 @@
 import { reportService } from '../services/reportService.js';
+import { pdfReportService } from '../services/pdfReportService.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
@@ -79,9 +80,48 @@ export const getReportById = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, report, 'Health report retrieved successfully'));
 });
 
+/**
+ * @desc    Stream health report as PDF inline
+ * @route   GET /api/reports/:id/pdf
+ * @access  Private (Patient or authorized Doctor)
+ */
+export const getReportPdf = asyncHandler(async (req, res) => {
+  const reportId = req.params.id;
+  const requestingUser = { id: req.user.id, role: req.user.role };
+
+  const report = await reportService.getReportById(reportId, requestingUser);
+  const pdfBuffer = await pdfReportService.generateReportPDF(report);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="MediTrack-Report-${reportId}.pdf"`);
+  res.setHeader('Content-Length', pdfBuffer.length);
+  return res.status(200).send(pdfBuffer);
+});
+
+/**
+ * @desc    Download health report as PDF attachment
+ * @route   GET /api/reports/:id/download
+ * @access  Private (Patient or authorized Doctor)
+ */
+export const downloadReportPdf = asyncHandler(async (req, res) => {
+  const reportId = req.params.id;
+  const requestingUser = { id: req.user.id, role: req.user.role };
+
+  const report = await reportService.getReportById(reportId, requestingUser);
+  const pdfBuffer = await pdfReportService.generateReportPDF(report);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="MediTrack-Report-${reportId}.pdf"`);
+  res.setHeader('Content-Length', pdfBuffer.length);
+  return res.status(200).send(pdfBuffer);
+});
+
 export default {
   generateReport,
   getReports,
   getLatestReport,
   getReportById,
+  getReportPdf,
+  downloadReportPdf,
 };
+
