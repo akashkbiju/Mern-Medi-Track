@@ -4,10 +4,10 @@
   "description": "Smart Medication and Health Management System",
   "main": "index.js",
   "scripts": {
-    "start": "node server/server.js",
-    "server": "cd server && npm run dev",
-    "client": "cd client && npm run dev",
-    "dev": "concurrently \"npm run server\" \"npm run client\""
+    "start": "node backend/server.js",
+    "backend": "cd backend && npm run dev",
+    "frontend": "cd frontend && npm run dev",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\""
   },
   "keywords": [
     "mern",

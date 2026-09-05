@@ -37,10 +37,10 @@ This project follows a Monorepo-like structure containing both the frontend and 
 ## Folder Structure
 ```
 meditrack-plus/
-├── client/         # Frontend React/Vite application
+├── frontend/       # Frontend React/Vite application
 │   ├── public/
 │   └── src/        # React components, pages, and services
-└── server/         # Backend Express/Node application
+└── backend/        # Backend Express/Node application
     ├── config/     # Database and other configuration
     ├── controllers/# API logic
     ├── middleware/ # Express middlewares
@@ -56,17 +56,17 @@ meditrack-plus/
    ```
 3. Install frontend dependencies:
    ```bash
-   cd client
+   cd frontend
    npm install
    ```
 4. Install backend dependencies:
    ```bash
-   cd ../server
+   cd ../backend
    npm install
    ```
 
 ## Environment Variables
-Create a `.env` file in the `server` directory by copying `.env.example`:
+Create a `.env` file in the `backend` directory by copying `.env.example`:
 ```
 PORT=5000
 MONGODB_URI=your_mongodb_connection_string
@@ -81,8 +81,8 @@ npm run dev
 ```
 
 Alternatively, run them separately:
-- **Frontend**: `cd client && npm run dev`
-- **Backend**: `cd server && npm run dev`
+- **Frontend**: `cd frontend && npm run dev`
+- **Backend**: `cd backend && npm run dev`
 
 ## API Health Check
 You can test if the backend server is running correctly by navigating to:
