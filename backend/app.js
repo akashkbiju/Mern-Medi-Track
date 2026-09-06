@@ -23,6 +23,7 @@ import doctorRoutes from './routes/doctorRoutes.js';
 import connectionRoutes from './routes/connectionRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import patientRoutes from './routes/patientRoutes.js';
+import dashboardRoutes from './routes/dashboardRoutes.js';
 
 const app = express();
 
@@ -80,6 +81,7 @@ app.use('/api/doctors', doctorRoutes);
 app.use('/api/connections', connectionRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/patients', patientRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // 6. 404 Catch-All Middleware for unmatched routes
 app.use(notFound);
