@@ -292,9 +292,12 @@ export const validateRecordId = (req, res, next) => {
   next();
 };
 
+export const createHealthRecordValidator = validateCreateHealthRecord;
+
 export default {
   validateCreateHealthRecord,
   validateUpdateHealthRecord,
   validateHealthRecordQuery,
   validateRecordId,
+  createHealthRecordValidator,
 };
