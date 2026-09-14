@@ -1,0 +1,49 @@
+services:
+  # Backend Web Service
+  - type: web
+    name: meditrack-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 1d
+      - key: CLIENT_URL
+        fromService:
+          name: meditrack-frontend
+          type: web
+          property: host
+      - key: REMINDER_CRON_SCHEDULE
+        value: "* * * * *"
+      - key: REPORT_GENERATION_ENABLED
+        value: "true"
+
+  # Frontend Static Site
+  - type: web
+    name: meditrack-frontend
+    env: static
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: meditrack-backend
+          type: web
+          property: host
