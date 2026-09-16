@@ -1,1186 +1,366 @@
-# MediTrack+
+# MediTrack+ – Smart Medication & Health Management System
 
-## Description
-MediTrack+ is a "Smart Medication and Health Management System". It is a healthcare management web application designed to help users manage their medicines, receive reminders, track adherence, record health parameters, and connect securely with healthcare professionals.
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-emerald.svg)](#)
+[![Stack](https://img.shields.io/badge/Stack-MERN%20(React%20%7C%20Node%20%7C%20Express%20%7C%20MongoDB)-teal.svg)](#)
+[![License](https://img.shields.io/badge/License-Academic%20%2F%20MIT-blue.svg)](#)
+[![Tests](https://img.shields.io/badge/Tests-17%2F17%20Passed-brightgreen.svg)](#)
 
-## Problem Statement
-Managing medications and monitoring personal health metrics can be challenging for many individuals, particularly those with chronic conditions or complex medication schedules. Non-adherence to medication regimens can lead to poor health outcomes.
+> **MediTrack+** is an enterprise-grade digital healthcare platform engineered to solve medication non-adherence, consolidate fragmented physiological telemetry, and provide role-governed clinical connectivity between patients and authorized healthcare providers.
 
-## Objectives
-- Simplify medication management and scheduling.
-- Improve medication adherence through smart reminders and tracking.
-- Provide a unified dashboard for tracking essential health parameters.
-- Enable users to visualize their health and medication data securely.
-- Facilitate communication between patients and healthcare professionals.
+---
 
-## Core Features
-*(Note: Some features are planned for future implementation and are not yet fully integrated)*
-- Smart medication reminders
-- Medication adherence score
-- Health analytics dashboard
-- Automatic health reports
-- Doctor connectivity
+## Table of Contents
+- [1. Overview & Motivation](#1-overview--motivation)
+- [2. Problem Statement & Objectives](#2-problem-statement--objectives)
+- [3. Complete Feature Modules](#3-complete-feature-modules)
+- [4. System Architecture](#4-system-architecture)
+- [5. Technology Stack](#5-technology-stack)
+- [6. API Reference Matrix](#6-api-reference-matrix)
+- [7. Security Architecture & 5-Layer Authorization](#7-security-architecture--5-layer-authorization)
+- [8. Installation & Quickstart](#8-installation--quickstart)
+- [9. Environment Configuration](#9-environment-configuration)
+- [10. Testing & Verification](#10-testing--verification)
+- [11. Production Deployment (Render & Atlas)](#11-production-deployment-render--atlas)
+- [12. Academic & Demonstration Guide](#12-academic--demonstration-guide)
 
-## Technology Stack
-- **Frontend**: React.js, Vite, Tailwind CSS, React Router, Axios, Recharts, Lucide React
-- **Backend**: Node.js, Express.js
-- **Database**: MongoDB, Mongoose
-- **Security & Reliability**: Helmet, Express Rate Limit, Express Validator, CORS
-- **Authentication**: JWT, bcrypt *(Future implementation in Step 4)*
-- **Configuration**: dotenv
+---
 
-## Backend Architecture
-The backend follows an enterprise layered architecture with strict separation of concerns:
+## 1. Overview & Motivation
 
-```
-Client (Browser / React)
-  ↓
-Routes (/api/*)
-  ↓
-Middleware (Security headers, CORS, Rate Limit, Input Validation, Auth Foundation)
-  ↓
-Controllers (HTTP parsing, validation inspection, response formatting)
-  ↓
-Services (Business logic, orchestration, calculations)
-  ↓
-Models (Mongoose Schemas & DB validation constraints)
-  ↓
-MongoDB Database
-```
+Non-adherence to prescribed medication regimens is one of the leading drivers of preventable hospital readmissions and chronic illness complications globally. Patients often face complex multi-drug schedules, scattered paper health records, and no continuous visibility into how their vital signs correlate with medication consistency.
 
-### Response Flow:
-```
-MongoDB Database → Models → Services → Controllers → Standardized ApiResponse → Client
-```
+**MediTrack+** solves this by uniting:
+- **Patients**: Dynamic dose scheduling, automated reminders, mathematical adherence scores, biometric tracking, and downloadable PDF telemetry summaries.
+- **Physicians**: Verified clinical identity, searchable directory, explicit connection approvals, permitted health record inspection, and role-segregated private notes alongside patient-visible recommendations.
 
-## API Structure
+---
 
-| Endpoint Group | Route Base | Current Status | Description |
-| :--- | :--- | :--- | :--- |
-| **Authentication** | `/api/auth` | **Implemented** | Register (Step 4), Login & JWT Auth (Step 5) |
-| **User Management** | `/api/users` | *Foundation Ready* | User profile retrieval and management |
-| **Medicines** | `/api/medicines` | *Foundation Ready* | Medication schedule CRUD and active prescriptions |
-| **Reminders** | `/api/reminders` | *Foundation Ready* | Reminder scheduling and dose status logging |
-| **Health Records** | `/api/health-records`| *Foundation Ready* | Tracking vitals (BP, glucose, heart rate, weight) |
-| **Analytics** | `/api/analytics` | *Foundation Ready* | Adherence percentage and health metric trends |
-| **Reports** | `/api/reports` | *Foundation Ready* | Automated health summary PDF generation |
-| **Doctors** | `/api/doctors` | *Foundation Ready* | Doctor discovery, verification, and patient sharing |
+## 2. Problem Statement & Objectives
 
-*Note: Endpoints not yet built return HTTP `501 Not Implemented` with standardized JSON error envelopes.*
+### Problem Statement
+1. **Dose Confusion & Missed Medicines**: Regimens with varying daily frequencies lead to omitted or untimely doses.
+2. **Disconnected Health Metrics**: Blood pressure, blood sugar, weight, and heart rate are recorded on disparate paper logs.
+3. **Insecure Data Sharing**: Patients and physicians lack a zero-trust, permission-governed environment for reviewing clinical records without exposing unrelated personal data.
 
-## User Registration (`POST /api/auth/register`)
+### Core Objectives
+- **Zero-Clutter Scheduling**: Calculate daily dosage timelines dynamically on demand without pre-generating redundant database rows.
+- **Deterministic Adherence**: Calculate clinical adherence rates ($\text{Score} = \frac{\text{Taken}}{\text{Eligible}} \times 100$) and consecutive streaks with strict grace period rules.
+- **Granular Access Gates**: Enforce a 5-layer authorization chain for doctor health record and report access.
+- **Publication-Ready Reporting**: Compile longitudinal telemetry into structured JSON summaries and stream branded, printable PDF documents via server-side PDFKit.
 
-MediTrack+ enforces a strict, multi-layered security model for user onboarding:
-- **Role Control**: Public registration strictly creates accounts with `role: "patient"`. Doctor and admin privileges cannot be granted through public registration and are sanitized on the server.
-- **Password Security**: Passwords must meet policy criteria (8+ characters, uppercase, lowercase, numeric digit, special character). Passwords are hashed with `bcryptjs` (salt work factor: 12) prior to storage in MongoDB.
-- **Privacy by Default**: The `password` field in `User` schema has `select: false`. Passwords and password hashes are never returned in API responses or written to logs.
-- **Duplicate Protection**: Email addresses are normalized (trimmed and lowercased). The system checks for existing accounts before saving and returns HTTP 409 Conflict if duplicate.
-- **Rate Limiting**: Protected by dedicated `authLimiter` allowing 20 requests / 15 minutes to prevent automated abuse.
+---
 
-### Request Body
-```json
-{
-  "fullName": "Jane Doe",
-  "email": "jane@example.com",
-  "password": "SecurePassword@123",
-  "confirmPassword": "SecurePassword@123",
-  "phone": "+1234567890"
-}
-```
+## 3. Complete Feature Modules
 
-### Successful Response (`HTTP 201 Created`)
-```json
-{
-  "success": true,
-  "message": "Account created successfully",
-  "data": {
-    "user": {
-      "id": "664b1f48c3f4e2401f7...",
-      "fullName": "Jane Doe",
-      "email": "jane@example.com",
-      "role": "patient",
-      "phone": "+1234567890",
-      "createdAt": "2026-09-06T00:00:00.000Z"
-    }
-  }
-}
-```
+### 1. Authentication & Role-Based Access Control (RBAC)
+- Stateless authentication using JSON Web Tokens (JWT) and `bcryptjs` password hashing (salt work factor 12).
+- Strict role isolation: `patient`, `doctor`, and `admin`.
+- Inactive account protection (`isActive: false` checks) and automated cookie/header token synchronization.
 
-### Possible Errors
-- **`HTTP 400 Bad Request`**: Validation failure (missing fields, weak password, password mismatch, invalid email format).
-- **`HTTP 409 Conflict`**: Account with the specified email already exists.
-- **`HTTP 429 Too Many Requests`**: Rate limit exceeded (20 requests / 15 min).
-- **`HTTP 503 Service Unavailable`**: MongoDB service temporarily unreachable.
+### 2. Medication Management & Dynamic Scheduling
+- Support for complex medical frequencies: `once_daily`, `twice_daily`, `three_times_daily`, `four_times_daily`, and `custom` (up to 12 doses/day).
+- Strict medical unit validation: `mg`, `g`, `mcg`, `ml`, `tablet`, `capsule`, `drop`, `puff`, `unit`.
+- On-demand daily schedule generator: updates instantly upon prescription edits without data anomalies.
 
-## User Authentication & JWT Login
+### 3. Smart Medication Reminders & Recovery
+- Timezone-aware notification scheduler operating via background `node-cron`.
+- Automated server restart recovery within a controlled 15-minute window to prevent notification storms.
+- Idempotent compound unique indexes preventing duplicate reminder generation.
 
-MediTrack+ uses JSON Web Tokens (JWT) and bcrypt password verification:
-- **Stateless Tokens**: The backend signs standard JWTs containing minimal payload (`id`, `role`) with an expiration defined by `JWT_EXPIRES_IN` (e.g., `1d`).
-- **Secure Password Verification**: Passwords are authenticated with `bcrypt.compare()`.
-- **Enumeration Prevention**: Generic error message `"Invalid email or password"` (HTTP 401) is returned whether the email is unrecognized or password is wrong.
-- **Account State Verification**: Inactive accounts (`isActive: false`) are denied access with HTTP 403.
-- **Dual Token Transmission**: Supports both `Authorization: Bearer <token>` headers and secure httpOnly cookies.
-- **Session Restoration (`GET /api/auth/me`)**: Validates active JWT and returns the authenticated user profile.
-- **Logout (`POST /api/auth/logout`)**: Clears authentication cookies and terminates client session.
+### 4. Dose Tracking & Adherence Analytics
+- State machine for each scheduled dose: `pending` $\rightarrow$ `taken`, `missed`, or `skipped`.
+- Mathematical adherence percentage calculated across 7-day, 30-day, and custom calendar ranges.
+- Evaluates consecutive adherence streaks ($\ge 100\%$ compliance).
+- Future doses are strictly excluded from eligible doses to avoid penalizing patients prematurely.
 
-### Login Request (`POST /api/auth/login`)
-```json
-{
-  "email": "jane@example.com",
-  "password": "SecurePassword@123"
-}
-```
+### 5. Biometric Health Records & Longitudinal Analytics
+- Tracks physiological parameters: Blood Pressure (dual systolic/diastolic), Blood Sugar, Heart Rate, Weight, and Temperature.
+- Validated biological boundary enforcement and future date prevention.
+- Recharts-powered responsive area charts, trend metrics, and personal baseline comparisons.
 
-### Successful Response (`HTTP 200 OK`)
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "user": {
-      "id": "664b1f48c3f4e2401f7...",
-      "fullName": "Jane Doe",
-      "email": "jane@example.com",
-      "role": "patient",
-      "phone": "+1234567890",
-      "createdAt": "2026-09-06T00:00:00.000Z"
-    }
-  }
-}
+### 6. Doctor Directory, Verification & Care Team Network
+- Searchable doctor directory by name, medical specialization, and hospital affiliation.
+- Explicit connection lifecycle: `pending` $\rightarrow$ `approved`, `rejected`, or `revoked`.
+- Patient Care Team manager (`/my-doctors`) and Physician Roster manager (`/doctor/connections`).
+
+### 7. Clinical Notes & Patient Guidance
+- **Private Doctor Notes**: Visible strictly to the authoring doctor; never exposed to patients or included in reports.
+- **Patient-Visible Recommendations**: Clinical guidance prioritized by `normal`, `important`, or `urgent` tiers with automatic in-app alerts.
+
+### 8. Automated Health Reports & Server-Side PDF Generation
+- Scheduled compiler creates structured JSON telemetry records for weekly, monthly, and custom periods.
+- Server-side PDFKit rendering engine streams branded A4 reports with demographics, adherence graphs, vitals tables, physician guidance, and medical safety disclaimers.
+
+### 9. Unified Dashboards
+- **Patient Dashboard (`Dashboard.jsx`)**: Active medication counts, today's schedule checklist, adherence gauge, vitals overview, connected doctors, recent recommendations, and 1-click PDF download.
+- **Doctor Dashboard (`DoctorDashboard.jsx`)**: Credential verification tracker, patient search, actionable pending invitations, and patient health shortcuts.
+
+---
+
+## 4. System Architecture
+
+```mermaid
+graph TD
+    subgraph ClientLayer ["Client Layer (Presentation)"]
+        Browser["React 18 + Vite Web App"]
+        PatientUI["Patient Dashboard / Tracker / Vitals / Reports"]
+        DoctorUI["Doctor Portal / Patient Health / Notes"]
+    end
+
+    subgraph APILayer ["API Gateway & Middleware Layer"]
+        Router["Express.js Router (/api/*)"]
+        Helmet["Helmet Security Headers"]
+        Sanitizer["mongoSanitize (NoSQL Injection Defense)"]
+        RateLimit["Rate Limiters (apiLimiter / authLimiter)"]
+        AuthGuard["JWT Protect & RBAC Guard"]
+    end
+
+    subgraph ServiceLayer ["Business Logic & Services Layer"]
+        ScheduleSvc["scheduleService.js"]
+        ReminderSvc["reminderService.js"]
+        AdherenceSvc["adherenceService.js"]
+        DoctorAccessSvc["connectionAccessService.js"]
+        ReportSvc["reportService.js"]
+        PDFSvc["pdfReportService.js (PDFKit Engine)"]
+        DashboardSvc["dashboardService.js"]
+    end
+
+    subgraph DataLayer ["Data & Storage Layer"]
+        UserCol[("Users")]
+        MedicineCol[("Medicines")]
+        LogCol[("MedicationLogs")]
+        HealthCol[("HealthRecords")]
+        ConnCol[("Connections")]
+        NoteCol[("DoctorNotes")]
+        ReportCol[("HealthReports")]
+        Storage["backend/storage/reports/ (PDF Cache)"]
+    end
+
+    Browser --> Router
+    Router --> Helmet --> Sanitizer --> RateLimit --> AuthGuard
+    AuthGuard --> ServiceLayer
+    ServiceLayer --> DataLayer
 ```
 
-### Environment Variables
+---
+
+## 5. Technology Stack
+
+| Layer | Technologies | Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | React 18, Vite 8, Tailwind CSS | High-performance reactive UI with responsive healthcare SaaS design |
+| **Routing & Navigation** | React Router v6 | Role-based protected client routing (`ProtectedRoute`, `RoleRoute`) |
+| **Charts & Icons** | Recharts, Lucide React | Visual biometric trend charting and modern iconography |
+| **Backend Runtime** | Node.js (v18 / v20 LTS), Express.js 4 | Asynchronous RESTful API micro-architecture |
+| **Database** | MongoDB Atlas, Mongoose 8 | Document-oriented schema modeling with compound unique indexes |
+| **PDF Generation** | PDFKit | Server-side binary PDF streaming and clinical document design |
+| **Security & Auth** | bcryptjs, jsonwebtoken, Helmet | Work factor 12 password salting, stateless JWTs, secure HTTP headers |
+| **Sanitization & Limiting** | Custom mongoSanitize, express-rate-limit | Zero-trust NoSQL operator stripping and brute-force mitigation |
+| **Task Automation** | node-cron | Periodic medication reminders, missed dose detection, and report compilation |
+
+---
+
+## 6. API Reference Matrix
+
+### Authentication & Profiles (`/api/auth`, `/api/users`)
+- `POST /api/auth/register` — Register patient account
+- `POST /api/auth/doctor/register` — Register physician account with credentials
+- `POST /api/auth/login` — Authenticate user and issue JWT
+- `POST /api/auth/logout` — Clear authentication cookies
+- `GET  /api/auth/me` — Retrieve authenticated user profile
+- `GET  /api/users/profile` — Get personal profile details
+- `PUT  /api/users/profile` — Update patient profile information
+
+### Medication Management (`/api/medicines`, `/api/medication-logs`)
+- `GET    /api/medicines` — List medications with search and status filter
+- `POST   /api/medicines` — Create new medication schedule
+- `GET    /api/medicines/:id` — Inspect medication details
+- `PUT    /api/medicines/:id` — Update medication schedule
+- `PATCH  /api/medicines/:id/deactivate` — Soft-deactivate medication
+- `GET    /api/medicines/schedule/today` — Today's dynamic dosage schedule
+- `GET    /api/medication-logs/today` — Today's dose checklist and completion stats
+- `PATCH  /api/medication-logs/:id/taken` — Mark dose as taken
+- `PATCH  /api/medication-logs/:id/skipped` — Mark dose as skipped with notes
+
+### Health Tracking & Analytics (`/api/health-records`, `/api/analytics`)
+- `POST   /api/health-records` — Record biometric vitals
+- `GET    /api/health-records` — Paginated vitals history with date filters
+- `PATCH  /api/health-records/:id` — Update a health measurement
+- `DELETE /api/health-records/:id` — Delete a health record
+- `GET    /api/analytics/adherence` — Mathematical adherence rate and streak
+- `GET    /api/analytics/health` — Longitudinal trend telemetry for Recharts
+- `GET    /api/analytics/health/insights` — Non-diagnostic personal baseline insights
+
+### Doctor Network & Clinical Records (`/api/doctors`, `/api/connections`, `/api/patients`)
+- `GET   /api/doctors` — Search verified physicians directory
+- `POST  /api/connections` — Initiate doctor connection request
+- `PATCH /api/connections/:id/accept` — Physician accepts patient invitation
+- `PATCH /api/connections/:id/reject` — Physician declines patient invitation
+- `PATCH /api/connections/:id/revoke` — Revoke approved connection
+- `PATCH /api/connections/:id/permissions` — Patient updates doctor access permissions
+- `GET   /api/doctors/patients/:patientId/health-records` — View patient vitals (5-layer auth)
+- `POST  /api/doctors/patients/:patientId/notes` — Create clinical note or recommendation
+- `GET   /api/doctors/patients/:patientId/notes` — List notes for patient
+- `GET   /api/patients/me/doctor-recommendations` — Patient views active physician guidance
+
+### Reports & Dashboards (`/api/reports`, `/api/dashboard`)
+- `POST /api/reports/generate` — Compile structured health report
+- `GET  /api/reports` — List generated reports
+- `GET  /api/reports/:id` — Inspect structured report JSON
+- `GET  /api/reports/:id/pdf` — Stream generated PDF inline
+- `GET  /api/reports/:id/download` — Download report as PDF attachment
+- `GET  /api/dashboard/patient` — Consolidated patient dashboard telemetry
+- `GET  /api/dashboard/doctor` — Consolidated doctor dashboard and roster telemetry
+
+---
+
+## 7. Security Architecture & 5-Layer Authorization
+
+MediTrack+ enforces zero-trust principles across all routes:
+
+### 1. 5-Layer Clinical Access Gate
+A doctor requesting patient health records or reports is validated through five immutable checks:
+```
+1. JWT Token Validity (valid signature, non-expired)
+      ↓
+2. Doctor Role (req.user.role === 'doctor')
+      ↓
+3. Account Status (both doctor and patient isActive: true)
+      ↓
+4. Connection State (DoctorPatientConnection.status === 'approved')
+      ↓
+5. Explicit Permission Gate (permissions.healthRecords === true / permissions.reports === true)
+```
+
+### 2. Insecure Direct Object Reference (IDOR) Defense
+- All user-specific operations derive ownership strictly from `req.user.id` (cryptographically validated via JWT).
+- Any client-supplied `userId` or `doctorId` in request bodies or query parameters is sanitized and ignored.
+
+### 3. NoSQL Injection Defense
+- Custom `mongoSanitize` middleware inspects `req.body`, `req.query`, and `req.params`, recursively removing keys starting with `$` or containing `.`.
+
+---
+
+## 8. Installation & Quickstart
+
+### Prerequisites
+- Node.js (v18.x or v20.x LTS)
+- npm (v9.x or v10.x)
+- MongoDB (local instance or MongoDB Atlas connection string)
+
+### 1. Clone & Install Dependencies
+```bash
+git clone https://github.com/akashkbiju/Mern-Medi-Track.git
+cd Mern-Medi-Track/meditrack-plus
+
+# Install backend dependencies
+cd backend && npm install
+
+# Install frontend dependencies
+cd ../frontend && npm install
+```
+
+### 2. Configure Environment Files
+- Copy `backend/.env.example` to `backend/.env` and configure your credentials.
+- Copy `frontend/.env.example` to `frontend/.env`.
+
+### 3. Run Development Servers
+From `meditrack-plus/backend`:
+```bash
+npm run dev
+```
+From `meditrack-plus/frontend`:
+```bash
+npm run dev
+```
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+---
+
+## 9. Environment Configuration
+
+### Backend (`backend/.env`)
 ```env
 PORT=5000
-MONGODB_URI=your_mongodb_connection_string
+NODE_ENV=development
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/meditrack
 CLIENT_URL=http://localhost:5173
-JWT_SECRET=your_long_random_secret_key
+JWT_SECRET=your_super_secret_jwt_key_at_least_32_characters
 JWT_EXPIRES_IN=1d
+
+# Scheduler Settings
+REMINDER_CRON_SCHEDULE=* * * * *
+REMINDER_LOOKAHEAD_HOURS=24
+REMINDER_RECOVERY_MINUTES=15
+REMINDER_GRACE_MINUTES=60
+REPORT_GENERATION_ENABLED=true
+REPORT_GENERATION_CRON=0 0 * * *
 ```
 
-## Authentication & Authorization (RBAC)
-
-MediTrack+ enforces a layered access control architecture on both frontend and backend:
-
-### 1. Verification vs Authorization (HTTP 401 vs 403)
-- **`HTTP 401 Unauthorized`**: Request is missing a token, has an expired token, or token signature is invalid. Means: *You are not authenticated.*
-- **`HTTP 403 Forbidden`**: User is authenticated and active, but does not have the required role to access the resource, or account is disabled (`isActive: false`). Means: *Authenticated, but not permitted.*
-
-### 2. Backend Middleware Flow
-```text
-Request → protect (verify JWT & fetch user from DB) → authorizeRoles(...roles) → Controller
+### Frontend (`frontend/.env`)
+```env
+VITE_API_URL=http://localhost:5000/api
 ```
-- **`protect`**: Reads Bearer token from header or cookie, verifies signature, confirms active user in DB, and populates `req.user`.
-- **`authorizeRoles('patient', 'doctor', 'admin')`**: Reusable role guard verifying `req.user.role`.
-
-### 3. Resource Ownership Principle
-User-specific data operations strictly bind to `req.user.id` extracted from the cryptographically verified JWT payload. Roles cannot be modified via client request bodies.
-
-### 4. Frontend Route Protection
-- **`ProtectedRoute`**: Blocks unauthenticated visitors, checks initialization state, and redirects to `/login`.
-- **`RoleRoute`**: Verifies role permissions for authenticated users and navigates unauthorized users to the `/unauthorized` access denied screen.
-
-## User Profile Management
-
-MediTrack+ provides a protected user profile management system adhering to strict resource ownership principles:
-
-### 1. Ownership & Security Foundation
-- **Verified Identity**: Profile operations are bound to `req.user.id` derived from the cryptographically verified JWT. Client-supplied IDs are never trusted.
-- **Immutable Account Fields**: The user's registered `email`, `role`, and `isActive` status cannot be updated via the profile endpoint (`PUT /api/users/profile`), preventing privilege escalation.
-- **Operator Injection Protection**: MongoDB update operators (`$set`, `$unset`, etc.) passed in request payloads are completely ignored. Updates are explicitly whitelisted and mapped.
-- **Data Sanitization**: Internal security fields (`password`, password hashes, MongoDB internal versioning) are systematically stripped via `sanitizeUser.js`.
-
-### 2. Supported Profile Fields
-- **`fullName`**: String (2–100 chars, trimmed).
-- **`phone`**: String (international phone format).
-- **`dateOfBirth`**: ISO8601 Date (must not be a future date).
-- **`gender`**: Enum (`'male'`, `'female'`, `'other'`, `'prefer_not_to_say'`).
-- **`emergencyContact`**: Subdocument:
-  - `name`: String (max 100 chars).
-  - `relationship`: String (max 50 chars).
-  - `phone`: String (valid phone format).
-- **`profileImage`**: String avatar URL or placeholder reference.
-
-### 3. Profile Endpoints
-- **`GET /api/users/profile`**: Returns current authenticated user's profile.
-- **`PUT /api/users/profile`**: Validates input and updates current user's personal info and emergency contact.
-
-## Medicine Data Architecture
-
-MediTrack+ features a production-ready Medicine data architecture designed to support medication tracking, smart reminders, adherence scores, and health analytics.
-
-### 1. Data Model Structure & Ownership
-Every medication schedule belongs strictly to an authenticated user (`user: ObjectId -> User`). Medicines cannot exist without a valid user reference, and ownership is securely resolved on the server using `req.user.id`.
-
-```text
-User (Authenticated)
-│
-└── Medicine
-    ├── Name (e.g. Paracetamol)
-    ├── Generic Name (e.g. Acetaminophen)
-    ├── Dosage (Numeric: 500)
-    ├── Dosage Unit (Enum: mg, g, mcg, ml, tablet, capsule, drop, puff, unit)
-    ├── Frequency (Enum: once_daily, twice_daily, three_times_daily, four_times_daily, custom)
-    ├── Times (Array of 24-hour HH:mm strings, e.g. ["08:00", "20:00"])
-    ├── Start Date (ISO8601 Date)
-    ├── End Date (ISO8601 Date or null for ongoing prescriptions)
-    ├── Instructions (e.g. "Take after food")
-    ├── Notes (Personal patient remarks)
-    └── Active Status (isActive: Boolean for soft archiving)
-```
-
-### 2. Validation & Schedule Rules
-- **Dosage**: Enforced as a positive numeric value (`min: 0.001`, `max: 100000`). Stored independently from unit for precise analytics.
-- **Dosage Units**: Validated against supported medical units: `mg`, `g`, `mcg`, `ml`, `tablet`, `capsule`, `drop`, `puff`, `unit`.
-- **Frequency & Times Correlation**:
-  - `once_daily` requires exactly 1 time.
-  - `twice_daily` requires exactly 2 times.
-  - `three_times_daily` requires exactly 3 times.
-  - `four_times_daily` requires exactly 4 times.
-  - `custom` supports 1 to 12 user-defined times.
-  - Times must follow 24-hour `HH:mm` format with duplicate prevention.
-- **Date Boundaries**: `startDate` is required; `endDate` is optional and validated to ensure `endDate >= startDate`.
-- **Anti-Mass Assignment**: Rejects or ignores client tampering on `user`, `_id`, `createdAt`, and `updatedAt`.
-
-### 3. Database Indexes
-Optimized for high-frequency user-scoped queries:
-- `{ user: 1, isActive: 1 }`: Fast retrieval of active/inactive medicines.
-- `{ user: 1, startDate: 1 }`: Chronological prescription timeline queries.
-- `{ user: 1, endDate: 1 }`: Expiration and renewal tracking.
-- `{ user: 1, name: 1 }`: Scoped medicine lookup without global uniqueness collisions.
-
-## Medicine Management API
-
-The Medicine Management module provides complete CRUD functionality for authenticated patients:
-
-### 1. Endpoints Overview
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| **`GET`** | `/api/medicines` | List user medications with search (`?search=`) and status (`?status=active\|inactive\|all`) |
-| **`POST`** | `/api/medicines` | Create a new medication schedule |
-| **`GET`** | `/api/medicines/:id` | Retrieve medication details by ID (verified ownership) |
-| **`PUT`** | `/api/medicines/:id` | Update medication schedule and details |
-| **`PATCH`** | `/api/medicines/:id/deactivate` | Soft-deactivate a medication (maintains history) |
-| **`PATCH`** | `/api/medicines/:id/activate` | Reactivate an inactive medication |
-
-### 2. Strict Resource Isolation
-Every operation strictly filters by `{ user: req.user.id }`. Attempting to access or mutate another user's medicine returns `HTTP 404 Not Found` without disclosing record existence.
-
-### 3. Creation Payload Example (`POST /api/medicines`)
-```json
-{
-  "name": "Paracetamol",
-  "genericName": "Acetaminophen",
-  "dosage": 500,
-  "dosageUnit": "mg",
-  "frequency": "twice_daily",
-  "times": ["08:00", "20:00"],
-  "startDate": "2026-09-06",
-  "endDate": "2026-09-20",
-  "instructions": "Take after food with water",
-  "notes": "Mild fever and pain management"
-}
-```
-
-### 4. Successful Response (`HTTP 201 Created`)
-```json
-{
-  "success": true,
-  "message": "Medicine created successfully",
-  "data": {
-    "medicine": {
-      "id": "664b1f48c3f4e2401f7...",
-      "user": "664b1e38c3f4e2401f1...",
-      "name": "Paracetamol",
-      "genericName": "Acetaminophen",
-      "dosage": 500,
-      "dosageUnit": "mg",
-      "frequency": "twice_daily",
-      "times": ["08:00", "20:00"],
-      "startDate": "2026-09-06T00:00:00.000Z",
-      "endDate": "2026-09-20T00:00:00.000Z",
-      "instructions": "Take after food with water",
-      "notes": "Mild fever and pain management",
-      "isActive": true,
-      "createdAt": "2026-09-06T00:00:00.000Z"
-    }
-  }
-}
-```
-
-## Medication Scheduling System
-
-MediTrack+ features a high-performance, dynamic medication scheduling engine. Instead of generating redundant pre-allocated database entries for every future dose, daily and upcoming schedules are calculated dynamically on demand directly from the `Medicine` model parameters (`frequency`, `times`, `startDate`, `endDate`, and `isActive`).
-
-### Core Features
-- **Dynamic On-Demand Calculation**: Schedules are generated algorithmically at query time, ensuring that any edit to dosage, timing, frequency, or deactivation instantly updates schedules without data inconsistencies.
-- **Date Range Accuracy**: Compares target dates against medication `startDate` and optional `endDate` (supporting indefinite prescriptions).
-- **Chronological Dose Sorting**: Daily doses are ordered chronologically by scheduled time (24h format), with secondary alphabetical ordering by medicine name.
-- **Strict Date Validation**: Validates `YYYY-MM-DD` calendar parameters strictly, catching invalid leap years, out-of-bounds months, and malformed inputs.
-
-### Schedule Endpoints
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/medicines/schedule/today` | Today's complete medication schedule for authenticated user |
-| `GET` | `/api/medicines/schedule/daily?date=YYYY-MM-DD` | Medication schedule for any specific valid date |
-| `GET` | `/api/medicines/schedule/upcoming` | Rolling 24-hour upcoming medication doses |
-| `GET` | `/api/medicines/:id/schedule?date=YYYY-MM-DD` | Scheduled times for a specific medicine on a given date |
-
-### Sample Daily Schedule Response (`HTTP 200 OK`)
-```json
-{
-  "success": true,
-  "message": "Daily medication schedule retrieved successfully",
-  "data": {
-    "date": "2026-09-06",
-    "count": 2,
-    "schedule": [
-      {
-        "medicineId": "66db6bfae8020a40d5bb96fa",
-        "medicineName": "Metformin",
-        "genericName": "Metformin HCl",
-        "dosage": 500,
-        "dosageUnit": "mg",
-        "frequency": "twice_daily",
-        "scheduledDate": "2026-09-06",
-        "scheduledTime": "08:00",
-        "scheduledTime12h": "08:00 AM",
-        "instructions": "Take after meals",
-        "status": "Scheduled",
-        "isActive": true
-      },
-      {
-        "medicineId": "66db6bfae8020a40d5bb96fa",
-        "medicineName": "Metformin",
-        "genericName": "Metformin HCl",
-        "dosage": 500,
-        "dosageUnit": "mg",
-        "frequency": "twice_daily",
-        "scheduledDate": "2026-09-06",
-        "scheduledTime": "20:00",
-        "scheduledTime12h": "08:00 PM",
-        "instructions": "Take after meals",
-        "status": "Scheduled",
-        "isActive": true
-      }
-    ]
-  }
-}
-```
-
-## Smart Medication Reminder Engine
-
-MediTrack+ includes an automated, timezone-aware medication reminder engine. Building upon Step 10's schedule service, the reminder engine generates and manages persistent notification events (`type: "medication_reminder"`) with guaranteed database-level idempotency, server restart recovery, and configurable lookahead windows.
-
-### Architecture Flow
-```
-User
-  ↓
-Medicine Configuration (frequency, times, start/end date)
-  ↓
-Step 10 Schedule Service (dynamic on-demand schedule calculation)
-  ↓
-Step 11 Reminder Engine (idempotent notification event generation)
-  ↓
-Notification Record (MongoDB 'Notification' collection)
-  ↓
-Step 12 Medication Tracking (taken/missed dose logs - upcoming)
-  ↓
-Step 18 Notification Delivery Layer (email/push delivery - upcoming)
-```
-
-### Key Capabilities
-- **Guaranteed Idempotency & Duplicate Prevention**: Backed by a compound unique partial MongoDB index on `{ user: 1, relatedMedicine: 1, type: 1, scheduledFor: 1 }`. Multiple scheduler executions, server restarts, or concurrent requests cannot produce duplicate reminders.
-- **Timezone Awareness**: Respects each user's configured IANA timezone (defaults to `"Asia/Kolkata"`), calculating exact UTC timestamps for `scheduledFor` to prevent timezone shift errors.
-- **Background Cron Processing**: Periodically generates reminder events via a lightweight background worker powered by `node-cron` (`REMINDER_CRON_SCHEDULE="* * * * *"`).
-- **Server Restart Recovery**: On startup, an immediate recovery pass catches any reminders that were due during recent server downtime within a controlled window (`REMINDER_RECOVERY_MINUTES=15`), avoiding sudden notification storms.
-- **Strict Separation of Concerns**: Reminder generation only indicates that a reminder was calculated and queued. It does **NOT** mark the dose as taken or missed. *Step 12 will implement medication taken/missed tracking.*
-
-### Reminder Endpoints
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/reminders/today` | Today's medication reminders for authenticated user |
-| `GET` | `/api/reminders/upcoming?hours=24` | Upcoming reminders within configurable lookahead window |
-| `GET` | `/api/reminders` | Query reminder history (filters: `date`, `isRead`, `medicineId`, pagination) |
-| `PATCH` | `/api/reminders/:id/read` | Mark a reminder notification as read |
-| `POST` | `/api/reminders/process` | Trigger reminder synchronization / processing cycle |
-
-### Sample Reminder Response (`HTTP 200 OK`)
-```json
-{
-  "success": true,
-  "message": "Today's medication reminders retrieved successfully",
-  "data": {
-    "count": 2,
-    "reminders": [
-      {
-        "_id": "66db7015a892b130e90c88bc",
-        "user": "66db6bfae8020a40d5bb96f9",
-        "type": "medication_reminder",
-        "title": "Medication Reminder: Metformin",
-        "message": "It's time to take Metformin (500 mg) at 08:00 AM • Take after meals.",
-        "relatedMedicine": {
-          "_id": "66db6bfae8020a40d5bb96fa",
-          "name": "Metformin",
-          "dosage": 500,
-          "dosageUnit": "mg",
-          "instructions": "Take after meals"
-        },
-        "scheduledFor": "2026-09-06T02:30:00.000Z",
-        "isRead": false,
-        "sentAt": null,
-        "createdAt": "2026-09-06T02:00:00.000Z"
-      }
-    ]
-  }
-}
-```
-
-## Medication Taken & Missed Tracking
-
-MediTrack+ allows patients to track actual medication adherence by recording whether each scheduled dose was **Pending**, **Taken**, **Missed**, or **Skipped**. The system cleanly separates scheduled dose calculations (Step 10) and reminder alerts (Step 11) from actual dose consumption events.
-
-### Architecture Flow
-```
-User
-  ↓
-Medicine
-  ↓
-Step 10 Schedule Service (dynamic on-demand schedule)
-  ↓
-Step 11 Reminder Engine (alert notification records)
-  ↓
-Step 12 MedicationLog Engine
-  ├── Pending (initial scheduled state)
-  ├── Taken (actual takenAt timestamp + optional patient note)
-  ├── Skipped (patient skipped with reason note)
-  └── Missed (automated after REMINDER_GRACE_MINUTES expiration)
-  ↓
-Step 13 Adherence Analytics (upcoming)
-```
-
-### Key Capabilities
-- **Lazy On-Demand Generation**: Medication logs are generated lazily when accessing daily schedules rather than creating redundant database entries years in advance.
-- **Idempotency & Duplicate Prevention**: Backed by a compound unique MongoDB index on `{ user: 1, medicine: 1, scheduledDate: 1, scheduledTime: 1 }`. Repeated calls or concurrent requests preserve existing log status.
-- **Status State Machine**:
-  - `pending → taken`: Sets `takenAt = new Date()`. Idempotent if re-invoked.
-  - `pending → skipped`: Allows patients to record a reason note without counting as a missed dose.
-  - `pending → missed`: Automated by background scheduler when `Date.now() > scheduledTime + REMINDER_GRACE_MINUTES` (default 60 mins).
-  - `missed → taken`: Supported for late medication taking; records exact `takenAt` while preserving original scheduled time.
-  - `taken` and `skipped` are immutable to automated missed transitions.
-- **Timezone Awareness**: Interprets daily schedules using each user's configured IANA timezone (default `Asia/Kolkata`).
-
-### Medication Log Endpoints
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/medication-logs/today` | Today's medication dose checklist and progress statistics |
-| `GET` | `/api/medication-logs` | Query dose logs history (filters: `date`, `startDate`, `endDate`, `status`, `medicineId`) |
-| `GET` | `/api/medication-logs/:id` | Retrieve a single medication log |
-| `PATCH` | `/api/medication-logs/:id/taken` | Mark a scheduled dose as taken (optional `{ notes }`) |
-| `PATCH` | `/api/medication-logs/:id/skipped` | Mark a scheduled dose as skipped (optional `{ notes }`) |
-| `POST` | `/api/medication-logs/process-missed`| Trigger automated missed dose check |
-
-### Sample Today's Log Response (`HTTP 200 OK`)
-```json
-{
-  "success": true,
-  "message": "Today's medication schedule retrieved successfully",
-  "data": {
-    "date": "2026-09-06",
-    "timezone": "Asia/Kolkata",
-    "stats": {
-      "total": 3,
-      "taken": 1,
-      "pending": 1,
-      "missed": 0,
-      "skipped": 1,
-      "completionRate": 33
-    },
-    "medications": [
-      {
-        "_id": "66db7015a892b130e90c88bc",
-        "user": "66db6bfae8020a40d5bb96f9",
-        "medicine": {
-          "_id": "66db6bfae8020a40d5bb96fa",
-          "name": "Paracetamol",
-          "dosage": 500,
-          "dosageUnit": "mg"
-        },
-        "scheduledDate": "2026-09-06T00:00:00.000Z",
-        "scheduledTime": "08:00",
-        "scheduledTime12h": "08:00 AM",
-        "status": "taken",
-        "takenAt": "2026-09-06T02:35:12.000Z",
-        "notes": "Taken after breakfast"
-      }
-    ]
-  }
-}
-```
-
-## Error Handling & Response Format
-
-The backend enforces a consistent JSON response envelope for all API endpoints.
-
-### Success Response Envelope (`ApiResponse.js`)
-```json
-{
-  "success": true,
-  "message": "Operation successful",
-  "data": { ... }
-}
-```
-
-### Error Response Envelope (`ApiError.js` & `errorMiddleware.js`)
-```json
-{
-  "success": false,
-  "message": "Error description message",
-  "errors": [ ... ]
-}
-```
-
-The global error handling middleware automatically intercepts:
-- **`ApiError`**: Operational errors with specific HTTP status codes
-- **Mongoose `ValidationError`**: Formats readable schema validation errors
-- **Mongoose `CastError`**: Converts malformed MongoDB IDs into clean 404 responses
-- **Mongoose Duplicate Key (`11000`)**: Converts duplicate unique fields into clean 409 Conflict responses
-- **Malformed JSON**: Catches invalid payload syntax with 400 Bad Request
-- **Production Guard**: Suppresses internal stack traces and database credentials in production environments
-
-## Database Architecture
-MongoDB is used as the primary database. Mongoose is used for schema modeling, relationship mapping, and strict data validation.
-
-### Main Collections / Models
-- **User**: Stores patient, doctor, and admin accounts.
-- **Medicine**: Stores medication schedules and details for users.
-- **MedicationLog**: Tracks every individual scheduled dose (taken, missed, pending).
-- **HealthRecord**: Stores daily health measurements like weight, BP, and blood sugar.
-- **DoctorProfile**: Stores verified public information for doctors.
-- **DoctorPatientConnection**: Manages access permissions between doctors and patients.
-- **HealthReport**: Tracks generated PDF health reports.
-- **Notification**: Stores system and medication alerts.
-
-### Important Relationships
-```text
-User
-├── Medicines
-├── Medication Logs
-├── Health Records
-├── Notifications
-├── Health Reports
-└── Doctor Connections
-
-Medicine
-└── Medication Logs
-
-Doctor
-└── Doctor-Patient Connections
-```
-
-## Folder Structure
-```
-meditrack-plus/
-├── frontend/                     # Frontend React/Vite application
-│   ├── public/
-│   └── src/
-│       ├── components/           # Reusable UI components
-│       ├── layouts/              # Dashboard layout shells
-│       ├── pages/                # LandingPage, Login, Register, Dashboard
-│       └── services/             # Axios API client (with dev health check)
-└── backend/                      # Backend Express/Node application
-    ├── config/                   # env.js, db.js
-    ├── controllers/              # HTTP handling (health, auth, medicine, etc.)
-    ├── middleware/               # error, notFound, rateLimit, validate, auth
-    ├── models/                   # 8 Mongoose schemas from Step 2
-    ├── routes/                   # Express routers (/api/health, /api/auth, etc.)
-    ├── services/                 # Business logic foundation layer
-    ├── utils/                    # ApiResponse, ApiError, asyncHandler, logger
-    ├── validators/               # Request validation schemas (express-validator)
-    ├── app.js                    # Express app configuration & middleware pipeline
-    ├── server.js                 # HTTP listener & startup orchestrator
-    ├── .env                      # Environment configuration
-    └── package.json
-```
-
-## Installation & Running
-
-1. **Install Root & Subproject Dependencies**:
-   ```bash
-   npm install
-   cd frontend && npm install
-   cd ../backend && npm install
-   ```
-
-2. **Environment Variables**:
-   Verify `backend/.env` is configured:
-   ```env
-   PORT=5000
-   MONGODB_URI=your_mongodb_connection_string
-   CLIENT_URL=http://localhost:5173
-   JWT_SECRET=your_jwt_secret
-   ```
-
-3. **Running the Project**:
-   From the root directory:
-   ```bash
-   npm run dev
-   ```
-   Or independently:
-   - Backend: `cd backend && npm run dev`
-   - Frontend: `cd frontend && npm run dev`
-
-4. **API Health Check**:
-   Navigate to or curl:
-   ```bash
-   curl http://localhost:5000/api/health
-   ```
-
-## Step 13 — Medication Adherence Score & Analytics
-
-MediTrack+ includes a clinical-grade Medication Adherence Score engine designed to accurately measure how consistently a patient adheres to their prescribed medication schedules.
-
-### Core Formula
-$$\text{Adherence Score} = \left( \frac{\text{Taken Eligible Doses}}{\text{Total Eligible Doses}} \right) \times 100$$
-
-> [!IMPORTANT]
-> **Medical Disclaimer**:
-> Medication adherence reflects how consistently scheduled doses were recorded as taken. It is not a medical diagnosis or treatment recommendation.
-
-### Eligible Dose Definition
-The adherence score is calculated strictly from scheduled doses and their actual recorded status in `MedicationLog`:
-- **Taken**: Completed (counted in both numerator and denominator).
-- **Missed**: Not completed (counted in denominator only).
-- **Skipped**: Not completed (counted in denominator only; treated as non-adherent for tracking).
-- **Pending**:
-  - Doses scheduled on past calendar dates are considered elapsed and counted in denominator as non-adherent.
-  - Doses scheduled for today are checked against the configured grace period (`REMINDER_GRACE_MINUTES`, default: 60 minutes). If `scheduledTime + gracePeriod` has passed, it is evaluated as missed. If still within the grace period, it is **excluded from eligible doses**.
-- **Future Doses**: Doses scheduled for later today or future calendar dates are strictly **excluded from eligible doses** and never penalize or reduce the patient's score.
-
-### Score Categories
-- **`Excellent`**: 90% – 100%
-- **`Good`**: 75% – 89.99%
-- **`Needs Improvement`**: 50% – 74.99%
-- **`Low`**: 0% – 49.99%
-- **`No Data`**: When `totalEligible === 0` (score returns `null` and `hasData: false`, clearly distinguishing an empty period from a 0% failure score).
-
-### Adherence Streak
-- Evaluates consecutive days meeting the threshold ($\ge 100\%$ adherence).
-- Days with zero scheduled doses (e.g. rest days or before prescription start) do not automatically break the streak.
-- Today is counted if all scheduled doses are completed at 100%, or bypassed if still in progress without missed doses.
-
-### API Endpoints
-- `GET /api/analytics/adherence?period=today`: Today's adherence score and completed dose ratio.
-- `GET /api/analytics/adherence?period=7d`: Last 7 calendar days aggregate and daily breakdown.
-- `GET /api/analytics/adherence?period=30d`: Last 30 calendar days aggregate and daily breakdown.
-- `GET /api/analytics/adherence?period=custom&startDate=YYYY-MM-DD&endDate=YYYY-MM-DD`: Custom date range (up to 366 days).
-
-#### Example Response (`GET /api/analytics/adherence?period=7d`)
-```json
-{
-  "success": true,
-  "message": "Medication adherence calculated successfully",
-  "data": {
-    "period": "7d",
-    "startDate": "2026-08-31",
-    "endDate": "2026-09-06",
-    "timezone": "Asia/Kolkata",
-    "totalEligible": 21,
-    "taken": 18,
-    "missed": 2,
-    "skipped": 1,
-    "pending": 0,
-    "adherenceScore": 85.71,
-    "category": "Good",
-    "hasData": true,
-    "currentStreak": 3,
-    "daily": [
-      {
-        "date": "2026-08-31",
-        "eligible": 3,
-        "taken": 3,
-        "missed": 0,
-        "skipped": 0,
-        "pending": 0,
-        "score": 100,
-        "category": "Excellent",
-        "hasData": true
-      }
-    ],
-    "disclaimer": "Medication adherence reflects how consistently scheduled doses were recorded as taken. It is not a medical diagnosis."
-  }
-}
-```
-
-## Step 14 — Health Records Database & Data Architecture
-
-MediTrack+ includes a robust, validated, and scalable data architecture for tracking vital patient health parameters over time.
-
-### Supported Health Measurements & Standard Units
-- **Weight**: `kg` (Valid physiological range: 1 – 500 kg)
-- **Blood Pressure**: `mmHg` (Systolic: 40 – 300, Diastolic: 30 – 200; Systolic must be strictly greater than Diastolic; both required if blood pressure is supplied)
-- **Blood Sugar**: `mg/dL` (Valid physiological range: 20 – 1000 mg/dL)
-- **Heart Rate**: `BPM` (Valid physiological range: 20 – 300 BPM)
-- **Temperature**: `°C` (Valid physiological range: 25 – 45 °C)
-- **Notes**: Text (Max 1000 characters, trimmed)
-
-### Partial Record & Future Date Rules
-- **Partial Record Flexibility**: A patient is never required to submit all measurements simultaneously. Any combination is valid (e.g. only weight, or only blood pressure, or blood sugar and heart rate).
-- **Measurement Presence Requirement**: At least one valid health measurement must be present. Submitting an empty record with only a timestamp or notes is rejected.
-- **Future Date Prevention**: The `recordDate` cannot be in the future (allowing at most a 5-minute clock-skew tolerance).
-
-> [!IMPORTANT]
-> **Medical Safety Disclaimer**:
-> Health records are stored as tracking data and are not medical diagnoses. They do not replace professional medical advice.
-> 
-> *Note: Step 15 will implement the Health Tracking UI and CRUD workflow.*
-
-### Ownership & Security
-- All health records are strictly scoped to the authenticated patient (`user = req.user.id`).
-- Attempting to pass or override `userId` in `req.body` or queries is discarded.
-- Cross-user queries and mutations return HTTP 404 to avoid leaking record existence.
-- Doctor access is segregated and will be implemented in later steps.
-
-### API Endpoints (`/api/health-records`)
-- `POST /api/health-records`: Create a new health record.
-- `GET /api/health-records?page=1&limit=20&date=YYYY-MM-DD`: Retrieve paginated records (newest first) with optional date or measurement type filtering.
-- `GET /api/health-records/:id`: Fetch a single health record verifying user ownership.
-- `PATCH /api/health-records/:id`: Update allowed measurement fields (rejects mutation of `user`, `_id`, or `createdAt`).
-- `DELETE /api/health-records/:id`: Hard-delete a patient's own record.
-
-## Step 15 — Health Tracking UI + CRUD
-
-MediTrack+ provides a responsive, accessible, clinical-grade patient interface for recording, viewing, editing, and managing vital health measurements.
-
-### Features
-1. **Health Summary Overview (`HealthSummary.jsx`)**:
-   - Cards displaying the patient's latest recorded vital parameters: Weight (kg), Blood Pressure (mmHg), Blood Sugar (mg/dL), Heart Rate (BPM), and Temperature (°C).
-   - Shows relative time of measurement (e.g. "Today at 08:30 AM", "Yesterday", or formatted date) and fallback indicators for unrecorded parameters.
-   - Prominently displays the mandatory medical disclaimer: vitals are recorded for informational and tracking purposes and do not replace professional diagnosis.
-
-2. **Vital Recording & Editing Modal (`HealthRecordForm.jsx`)**:
-   - Modal dialog with glassmorphism backdrop supporting both Create and Edit modes.
-   - Measurement date & time input with a convenient "Set to Now" quick button and future date prevention.
-   - Individual vital sign inputs with physiological range boundaries:
-     - Weight: 1 – 500 kg
-     - Blood Pressure: Systolic (40 – 300 mmHg) & Diastolic (30 – 200 mmHg) with strict consistency check (`systolic > diastolic`)
-     - Blood Sugar: 20 – 1000 mg/dL
-     - Heart Rate: 20 – 300 BPM
-     - Temperature: 25.0 – 45.0 °C
-   - Notes & symptoms textarea with live character counter (up to 1000 characters).
-   - Validates that at least one measurement is provided before submission.
-
-3. **Health Records History List (`HealthRecordList.jsx`)**:
-   - **Desktop View**: Clean, sortable-style table displaying Date & Time, Weight, Blood Pressure, Blood Sugar, Heart Rate, Temperature, Notes preview, and Edit/Delete actions.
-   - **Mobile View**: Stacked responsive cards with measurement badge chips for optimal readability on smaller screens.
-   - **Delete Confirmation Dialog**: Accessible safety modal preventing accidental deletions.
-
-4. **Health Tracking Page (`HealthTracking.jsx`)**:
-   - Accessible via `/health` and `/health-records`.
-   - Measurement type filter pills (`All Vitals`, `Weight`, `Blood Pressure`, `Blood Sugar`, `Heart Rate`, `Temperature`).
-   - Start Date and End Date range pickers with quick reset button.
-   - Server-side pagination controls (`Page X of Y`, `Previous`, `Next`).
-   - Real-time user feedback alerts for create, update, and delete actions.
-
-5. **Dashboard Integration (`Dashboard.jsx` & `Sidebar.jsx`)**:
-   - Live health records counter on the Dashboard statistics card linking directly to `/health`.
-   - Quick action link from "Health Trends" section to "Manage Vitals".
-   - "Health Tracking" navigation link in the application sidebar with `HeartPulse` icon.
-
-## Step 16 — Health Analytics + Charts
-
-MediTrack+ provides a comprehensive, clinical-grade **Health Analytics and Charts** system enabling patients to visually track and analyze their vital health trends over time across five key parameters:
-1. **Weight** (`kg`)
-2. **Blood Pressure** (`mmHg`) — dual systolic and diastolic trends
-3. **Blood Sugar** (`mg/dL`)
-4. **Heart Rate** (`BPM`)
-5. **Temperature** (`°C`)
-
-### Clinical Safety & Non-Diagnostic Compliance
-> **Disclaimer**: The analytics feature summarizes user-recorded measurements and does not provide medical diagnosis or treatment recommendations. All changes and trends are purely numerical reports without normative or diagnostic classifications (e.g. "normal", "high", "low", "good", "bad", or "hypertension").
-
-### API Endpoints
-- `GET /api/analytics/health`: Returns trend arrays, latest values, previous values, numerical change, percentage change, and record counts for a specific metric or all metrics.
-  - **Query Parameters**:
-    - `metric`: `weight | bloodPressure | bloodSugar | heartRate | temperature | all` (default: `all`)
-    - `period`: `7d | 30d | 90d | custom` (default: `30d`)
-    - `startDate`: `YYYY-MM-DD` (required when `period === 'custom'`)
-    - `endDate`: `YYYY-MM-DD` (required when `period === 'custom'`)
-- `GET /api/analytics/health/summary`: Returns a compact KPI summary across all 5 vital parameters for the requested time period.
-
-### Analytical Calculations
-- **Change**: `latest - previous` (rounded to 2 decimal places).
-- **Percentage Change**: `((latest - previous) / previous) * 100` (computed only when previous is available and non-zero).
-- **Missing Data Handling**: Unrecorded metrics are preserved as `null` or omitted from individual metric trends, never replaced with zero.
-- **Multiple Daily Records**: Exact measurement timestamps (`date`, `time`, `dateTime`) are preserved chronologically rather than averaged, ensuring complete clinical fidelity for multiple readings on the same day.
-- **User Isolation & Security**: Protected by JWT authentication and scoped exclusively to `req.user.id`. Custom date ranges are validated with a 366-day safety boundary.
-
-## Step 17 — Smart Health Insights
-
-MediTrack+ provides an analytical, non-diagnostic **Smart Health Insights** engine that evaluates recorded health metrics and medication adherence to uncover meaningful trends, notable personal changes, and recording consistency patterns.
-
-### Clinical Safety & Non-Diagnostic Principles
-> **Disclaimer**: Smart Health Insights provides analytical summaries of user-recorded data and is not a medical diagnosis or treatment system. The engine never diagnoses conditions, prescribes therapies, or recommends alterations to medication dosages.
-
-### Core Capabilities
-1. **Personal Baseline Comparison**: Instead of generic medical reference ranges, insights compare each user's current measurements directly against their own previous records and baseline trends.
-2. **Trend Detection**:
-   - `0 records`: Identifies missing data gracefully without errors.
-   - `1 record`: Informs the user that a single point cannot form a trend.
-   - `2 records`: Generates a direct comparison of numerical change.
-   - `3+ records`: Evaluates directionality (`gradual upward trend`, `gradual downward trend`, or `relatively stable`).
-3. **Notable Change Detection**: Flags changes exceeding a configurable application threshold (`HEALTH_INSIGHT_CHANGE_THRESHOLD_PERCENT`, default 10%) with neutral `attention` severity.
-4. **Data Consistency Analysis**: Evaluates overall recording frequency across all vitals to encourage consistent logging.
-5. **Medication Adherence Context**: Synthesizes Step 13 adherence metrics alongside vital trends without implying false causal conclusions.
-
-### API Endpoint
-- `GET /api/analytics/health/insights`: Generates structured, on-demand health insights for authenticated patients.
-  - **Query Parameters**:
-    - `period`: `7d | 30d | 90d | custom` (default: `30d`)
-    - `startDate`: `YYYY-MM-DD` (required when `period === 'custom'`)
-    - `endDate`: `YYYY-MM-DD` (required when `period === 'custom'`)
-  - **Controlled Enums**:
-    - `category`: `weight | blood_pressure | blood_sugar | heart_rate | temperature | consistency | adherence | general`
-    - `type`: `trend | change | consistency | missing_data | adherence | summary`
-    - `severity`: `info | attention | positive`
-
-## Step 18 — Notification System
-
-MediTrack+ includes a robust, multi-channel **Notification System** that delivers timely medication reminders, missed dose alerts, and system notices directly within the web application while maintaining an extensible architecture prepared for external email and push delivery channels.
-
-### Core Capabilities
-1. **In-App Notifications**: Stored in MongoDB and accessible through an interactive notification bell with live unread badge counters, recent dropdown previews, and a dedicated `/notifications` management center.
-2. **Medication Reminder Integration**: Seamlessly connects with the Step 11 reminder engine to generate `medication_reminder` notifications for due doses.
-3. **Missed Medication Detection**: Automatically generates `missed_medication` notifications when a pending medication dose passes its scheduled grace period without being recorded as taken.
-4. **Idempotency & Duplicate Prevention**: Compound unique indexes (`{ user, relatedMedicine, type, scheduledFor, channel }`) and deterministic log identifiers prevent duplicate notifications if schedulers re-run.
-5. **Read / Unread State Management**: Supports marking individual notifications as read or unread, bulk marking all as read, and deleting notifications with strict user ownership validation.
-6. **Notification Preferences**: Patients can toggle alerts for medication reminders, missed doses, health observations, doctor updates, and reports via `/profile`.
-7. **Provider Architecture**: Clean provider abstraction layer (`inAppNotificationProvider`, `emailNotificationProvider`, `pushNotificationProvider`). Email and push notification delivery remain provider-ready and report `not_configured` unless explicitly enabled.
-8. **Clinical Safety Compliance**: Reminders and missed notifications strictly describe factual dose events and never recommend dosage changes, doubling up, or altering prescriptions.
-
-### API Endpoints
-- `GET /api/notifications`: Paginated list of notifications with filters (`read=true|false`, `type=...`, `page`, `limit`).
-- `GET /api/notifications/unread`: Retrieve the latest unread notifications for bell dropdown previews.
-- `GET /api/notifications/count`: Returns the total number of unread notifications for badge counters (`{ unreadCount }`).
-- `GET /api/notifications/:id`: Retrieve single notification details.
-- `PATCH /api/notifications/:id/read`: Mark single notification as read.
-- `PATCH /api/notifications/:id/unread`: Mark single notification as unread.
-- `PATCH /api/notifications/read-all`: Mark all unread notifications as read.
-- `DELETE /api/notifications/:id`: Delete a single notification.
-- `DELETE /api/notifications/read`: Delete all read notifications for the authenticated user.
-- `GET /api/users/notification-preferences`: Retrieve current user notification preferences.
-- `PATCH /api/users/notification-preferences`: Update user notification preferences with strict boolean validation.
-
-## Step 19 — Doctor Registration, Login & Profile
-
-MediTrack+ includes a dedicated **Doctor Module** establishing the clinical identity foundation for healthcare providers. Doctors register through a dedicated verification pathway, authenticate using the unified JWT authentication system, manage practice credentials, and access a tailored physician portal.
-
-### Core Capabilities
-1. **Dedicated Doctor Registration**: Healthcare providers register via `POST /api/auth/doctor/register` with medical license number, specialization, hospital affiliation, years of clinical experience, bio, and consultation hours.
-2. **Server-Enforced Role & Verification**: The backend strictly sets `role: 'doctor'` and `isVerified: false`. Client-supplied role injection and self-verification flags are completely rejected.
-3. **Atomic User & Profile Creation**: Uses rollback protection to prevent orphan user accounts if profile creation fails.
-4. **Credential Uniqueness**: Both `email` and `licenseNumber` enforce strict database-level unique constraints, returning `409 Conflict` on duplicates.
-5. **Unified Authentication**: Doctors log in through standard `POST /api/auth/login`. The server returns signed JWTs containing `{ id, role: 'doctor' }` and user payloads including `isVerified` status.
-6. **Role-Based Routing & UI Isolation**: 
-   - `Login.jsx` inspects role and redirects doctors to `/doctor/dashboard` and patients to `/dashboard`.
-   - `ProtectedRoute` enforces `allowedRoles` guards: patients calling doctor routes or vice versa are redirected to `/unauthorized`.
-   - `Sidebar` dynamically displays physician navigation (`Doctor Dashboard`, `Doctor Profile`, `Notifications`) and hides patient-only medication/tracking links.
-7. **Doctor Profile Management**:
-   - `GET /api/doctors/profile`: Fetches combined user identity and clinical credentials.
-   - `PATCH /api/doctors/profile`: Allows updating permitted practice fields (`fullName`, `phone`, `specialization`, `hospital`, `experience`, `bio`, `consultationInfo`).
-   - Strictly preserves immutable security fields (`email`, `licenseNumber`, `isVerified`, `role`).
-8. **Clinical Safety & Verification Notice**: Doctors with `isVerified: false` receive a prominent amber verification notice explaining that credentials are queued for administrative review, while allowing practice configuration.
-
-### API Endpoints
-- `POST /api/auth/doctor/register`: Register new physician account (`201 Created`).
-- `POST /api/auth/login`: Authenticate doctor or patient, returning JWT and profile with `role` and `isVerified`.
-- `GET /api/doctors/profile`: Retrieve authenticated doctor's professional profile (Doctor role protected).
-- `PATCH /api/doctors/profile`: Update permitted contact and practice details (Doctor role protected).
-
-## Step 20 — Doctor-Patient Connection System
-
-MediTrack+ features a secure, explicit **Doctor-Patient Connection System** establishing verified clinical relationships. Patients discover physicians, review professional qualifications, and initiate connection requests. Doctors review incoming patient requests, manage approvals, and maintain an active care roster.
-
-> **Clinical Security Notice:** Creating a doctor-patient connection does not by itself expose patient medical records. Medical-data access is implemented separately with explicit authorization in future steps.
-
-### Core Capabilities
-1. **Doctor Discovery & Search**:
-   - `GET /api/doctors`: Controlled, case-insensitive search across doctor names, specializations, and hospital affiliations with pagination.
-   - Prevents MongoDB operator injection and exposes only safe public professional information (`id`, `fullName`, `specialization`, `hospital`, `experience`, `bio`, `isVerified`, `consultationInfo`).
-   - Private contact details, password hashes, and patient records are strictly excluded.
-   - `GET /api/doctors/:doctorId`: Secure public physician profile lookup.
-2. **Patient-Initiated Connection Workflow**:
-   - `POST /api/connections`: Authenticated patients initiate connection requests specifying `{ doctorId }`. Rejects self-connection and unverified/inactive targets.
-   - Duplicate prevention: Returns `409 Conflict` if a request is already pending or approved.
-   - Reuse lifecycle: Previously rejected or revoked requests transition back to `pending`, resetting request timestamps and preserving relationship history.
-3. **Doctor Review & Response**:
-   - `GET /api/connections/doctor/requests`: Doctors view incoming pending requests with basic patient identification. NO patient health data is exposed.
-   - `PATCH /api/connections/:id/accept`: Target doctor accepts the request, transitioning status to `approved` and timestamping `approvedAt`.
-   - `PATCH /api/connections/:id/reject`: Target doctor declines the request, transitioning status to `rejected` while preserving document history.
-4. **Cancellation & Revocation**:
-   - `PATCH /api/connections/:id/cancel`: Patient cancels a pending request, transitioning status to `revoked`.
-   - `PATCH /api/connections/:id/revoke`: Either party revokes an active connection with strict ownership checks.
-5. **Care Team Management**:
-   - `GET /api/connections/patient/pending`: Patient views active requests awaiting review.
-   - `GET /api/connections/patient/connected`: Patient views active connected physicians.
-   - `GET /api/connections/doctor/connected`: Doctor views active connected patients roster.
-   - `GET /api/connections/status/:doctorId`: Real-time status lookup (`none`, `pending`, `approved`, `rejected`, `revoked`).
-6. **Automated In-App Notifications**:
-   - Sends `doctor_request` notifications to physicians when patients request connections.
-   - Sends `doctor_approved` or `doctor_rejected` notifications to patients upon physician review.
-7. **Frontend Physician Network Pages**:
-   - `/doctors`: Doctor Directory with search, specialty filtering, hospital filtering, and one-click connection requests.
-   - `/doctors/:doctorId`: Detailed physician profile page.
-   - `/my-doctors`: Patient Care Team center with Connected Doctors and Pending Requests.
-   - `/doctor/connections`: Physician portal for reviewing pending invitations and managing patient roster.
-
-### API Endpoints
-- `GET /api/doctors`: Search and list eligible physicians (Protected).
-- `GET /api/doctors/:doctorId`: Retrieve safe public doctor profile (Protected).
-- `POST /api/connections`: Send connection request to doctor (Patient only).
-- `GET /api/connections/status/:doctorId`: Check relationship status with doctor (Patient only).
-- `GET /api/connections/patient/pending`: List patient's pending connection requests (Patient only).
-- `GET /api/connections/patient/connected`: List patient's approved connected doctors (Patient only).
-- `PATCH /api/connections/:id/cancel`: Cancel pending connection request (Patient only).
-- `GET /api/connections/doctor/requests`: View incoming connection requests (Doctor only).
-- `GET /api/connections/doctor/connected`: View connected patient roster (Doctor only).
-- `PATCH /api/connections/:id/accept`: Accept incoming connection request (Doctor only).
-- `PATCH /api/connections/:id/reject`: Decline incoming connection request (Doctor only).
-- `PATCH /api/connections/:id/revoke`: Revoke approved connection (Shared, ownership protected).
-
-## Step 21 — Doctor Health-Record Access
-
-MediTrack+ enforces a strict, multi-layered authorization model governing clinical health data access. 
-
-> **Critical Security Principles:**
-> - **"Doctors can access patient health records only through an approved doctor-patient connection with health-record permission enabled."**
-> - **"Having the doctor role alone does not grant access to patient health data."**
-
-### 5-Layer Authorization Chain
-
-Access to patient health records is validated on every single protected request through the following immutable sequence:
-
-```
-JWT Authentication
-      ↓
-Doctor Role (role === 'doctor')
-      ↓
-Active User Verification (doctor & patient accounts active)
-      ↓
-Approved Connection (DoctorPatientConnection.status === 'approved')
-      ↓
-Health Records Permission (connection.permissions.healthRecords === true)
-      ↓
-Patient Health Data Access
-```
-
-If any link in this chain is missing, unverified, or revoked, access is immediately rejected with `403 Forbidden` (or `401 Unauthorized` for missing/invalid credentials).
-
-### Key Architectural Capabilities
-
-1. **Explicit Doctor-Patient Authorization (`connectionAccessService.js`)**:
-   - Reusable authorization helper verifies the exact physician-patient relationship before executing queries.
-   - Prevents Insecure Direct Object References (IDOR): Doctor A cannot access Patient B simply by altering URL parameters or request bodies.
-   - The requesting doctor's identity is strictly derived from `req.user.id` (JWT). Any client-supplied `doctorId` parameters in `body` or `query` are completely ignored.
-2. **Permission-Based Access Control**:
-   - Backed by `DoctorPatientConnection.permissions.healthRecords`.
-   - If a patient or the system sets `permissions.healthRecords = false`, doctor access is immediately denied with `"Health record access is disabled for this connection."`
-   - Only connected patients can update permissions via `PATCH /api/connections/:id/permissions`. Doctors cannot manipulate connection permissions.
-3. **Immediate Connection Revocation**:
-   - If either the patient or doctor revokes the connection, access to health records, summaries, and trend analytics is immediately cut off.
-   - No cached session can bypass a revoked connection status.
-4. **Controlled Data Exposure & Privacy**:
-   - Doctors receive only clinical vital logs: record ID, record date, weight, blood pressure, blood sugar, heart rate, temperature, clinical notes, and timestamps.
-   - Patient password hashes, login tokens, account security flags, and unrelated private data are strictly stripped.
-5. **Secure Health Analytics (`healthAnalyticsService.js`)**:
-   - Doctors access patient vital trends over 7d, 30d, 90d, or validated custom date ranges.
-   - Reuses existing Step 16 analytics logic while ensuring doctors can never call patient analytics endpoints with arbitrary user IDs.
-6. **Non-Diagnostic UI Standard**:
-   - Patient health displays show recorded measurements and statistical delta changes (latest, previous, change).
-   - The application does not render automatic diagnoses, treatment recommendations, or "normal/abnormal" badges.
-7. **Audit Logging**:
-   - Lightweight, security-focused access logs capture `{ doctorId, patientId, action, timestamp }`.
-   - Sensitive clinical values (blood pressure, blood sugar, notes) and auth tokens are never written to audit logs.
-
-### Doctor Health Record Endpoints
-
-| Method | Endpoint | Description | Access Control |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/api/doctors/patients/:patientId/health-records` | Paginated patient health records (filters: `page`, `limit`, `startDate`, `endDate`, `metric`) | Doctor + Approved Connection + `healthRecords: true` |
-| `GET` | `/api/doctors/patients/:patientId/health-summary` | Concise health KPI summary across 5 vital metrics and total record count | Doctor + Approved Connection + `healthRecords: true` |
-| `GET` | `/api/doctors/patients/:patientId/health-analytics` | Longitudinal vital trend analytics (`metric`, `period`, `startDate`, `endDate`) | Doctor + Approved Connection + `healthRecords: true` |
-| `GET` | `/api/doctors/patients/:patientId/context` | Doctor-patient connection status and permission metadata | Doctor + Approved Connection + `healthRecords: true` |
-| `PATCH` | `/api/connections/:id/permissions` | Update connection permissions (`healthRecords`, `medications`, `reports`) | Connected Patient only |
-
-### Frontend Physician Experience
-
-- **Doctor Connections (`/doctor/connections`)**: Approved patients have a prominent **View Health Records** action navigating to `/doctor/patients/:patientId/health`. Pending, rejected, or revoked requests do not expose health links.
-- **Patient Health Portal (`/doctor/patients/:patientId/health`)**:
-  - **Patient Header**: Displays patient name, connection status pill, and permission status badge (`Health Records Access: Enabled`).
-  - **Vital Summary Cards**: Reusable KPI cards showing latest recorded measurements, previous readings, and percentage changes.
-  - **Period Selector & Trend Charts**: Interactive 7d, 30d, 90d, and custom date range filters rendering Recharts longitudinal trends.
-  - **Health Record History**: Desktop table and mobile cards with date filtering, metric whitelist filter, pagination, and a detailed record inspection modal.
-  - **Access Denied & Empty States**: Clean, accessible state indicators for unauthorized access, revoked relationships, or empty telemetry periods.
-- **Doctor Dashboard (`/doctor/dashboard`)**: Displays active **Connected Patients** count and recent patient care roster with quick access to health records.
-
-## Step 22 — Doctor Notes & Recommendations
-
-MediTrack+ enables approved physicians to record clinical observations and share targeted guidance with connected patients through a strictly segregated, role-governed clinical notes architecture.
-
-### Note Types & Visibility
-1. **Private Doctor Note (`visibility: "doctor_private"`)**:
-   - Visible solely to the physician author who created it.
-   - Never exposed to the patient, other doctors, or included in automated health reports.
-   - Enforced by server-side query filters (`{ doctor: req.user.id }`).
-2. **Patient-Visible Recommendation (`visibility: "patient_visible"`, `type: "recommendation"`)**:
-   - Created manually by the connected physician.
-   - Visible to the intended patient via `/doctor-recommendations` and Patient Dashboard.
-   - Automatically triggers a secure in-app notification (`doctor_recommendation`).
-   - Prioritized with standard clinical tiers: `normal`, `important`, `urgent`.
-
-### Access Control
-- Doctor can only access a patient's notes if connection is `approved` and `permissions.notes === true`.
-- Revoked connections immediately terminate access.
-- XSS prevention: content sanitization on creation and display.
-
-### API Endpoints
-- `POST /api/doctors/patients/:patientId/notes`: Create private note or patient-visible recommendation.
-- `GET /api/doctors/patients/:patientId/notes`: Doctor lists notes for connected patient.
-- `GET /api/doctors/patients/:patientId/notes/:noteId`: Inspect single note.
-- `PATCH /api/doctors/patients/:patientId/notes/:noteId`: Edit note content/priority.
-- `DELETE /api/doctors/patients/:patientId/notes/:noteId`: Delete note record.
-- `GET /api/patients/me/doctor-recommendations`: Patient retrieves published recommendations.
 
 ---
 
-## Step 23 — Automatic Health Report Generation
+## 10. Testing & Verification
 
-MediTrack+ features an automated health telemetry compiler that synthesizes longitudinal application data into structured, structured JSON reports before PDF rendering.
+MediTrack+ includes **17 automated test suites** covering all system layers:
 
-### Report Scope & Types
-- **Weekly (`weekly`)**: Prior 7 calendar days.
-- **Monthly (`monthly`)**: Prior 30 calendar days.
-- **Custom (`custom`)**: User-defined start and end dates (up to 366 days).
-
-### Report Sections
-1. **Patient Demographic & Schedule Boundaries**: Name, email, date range, creation timestamp.
-2. **Medication Adherence Compilation**: Total scheduled doses, doses taken, missed, skipped, adherence score %.
-3. **Health Telemetry Summary**: Latest blood pressure, blood sugar, heart rate, weight, temperature.
-4. **Trend Arrays**: Chronological data points for chart and table visualization.
-5. **Physician Guidance**: Patient-visible recommendations from approved physicians (private notes strictly excluded).
-6. **Neutral Health Summary**: Objective, observational text descriptions without medical diagnoses or prescriptions.
-
-### Automation & Delivery
-- Automatic generation runs via background cron scheduler (`REPORT_GENERATION_CRON="0 0 * * *"`).
-- Duplicate prevention: Compound unique index on `{ user: 1, reportType: 1, startDate: 1, endDate: 1 }`.
-- Automatically dispatches `report_ready` notification to the patient.
-
-### API Endpoints
-- `POST /api/reports/generate`: Request on-demand report compilation (Patient only).
-- `GET /api/reports`: Paginated list of generated reports.
-- `GET /api/reports/latest`: Retrieve latest compiled report.
-- `GET /api/reports/:id`: Single report inspection (Patient owner or permitted Doctor).
-
----
-
-## Step 24 — PDF Report Generation
-
-MediTrack+ transforms structured health report records into publication-grade, printable PDF documents designed for academic defense and clinical consultations.
-
-### Architecture & Design
-- **Server-Side Generation**: Uses `pdfkit` to generate PDF binaries directly on the backend. No client-side DOM rendering issues.
-- **Visual Styling**: Professional healthcare palette (Teal `#0D9488`, Dark Teal `#115E59`, Slate `#0F172A`), clean A4 layout with consistent margins.
-- **Standardized Medical Header**: MediTrack+ branding, report type badge, generated timestamp.
-- **Longitudinal Sections**: Adherence progress overview, vital sign telemetry table, active physician recommendations.
-- **Safety Disclaimer**: Prominent disclaimer stating that the document is an automated longitudinal compilation for informational tracking and does not constitute a clinical diagnosis or medical prescription.
-- **Security & Caching**: Safe local caching in `backend/storage/reports/` excluded from git commits; verified ownership checks prevent IDOR downloads.
-
-### API Endpoints
-- `GET /api/reports/:id/pdf`: Stream report PDF binary inline (`Content-Disposition: inline`).
-- `GET /api/reports/:id/download`: Download report PDF attachment (`Content-Disposition: attachment`).
-
----
-
-## Step 25 — Unified Dashboard Integration
-
-MediTrack+ features role-tailored, responsive dashboards providing comprehensive operational control for both Patients and Doctors.
-
-### Aggregated Architecture (`/api/dashboard`)
-To maximize client performance and eliminate waterfall API queries, single-trip aggregated endpoints supply all necessary dashboard telemetry:
-- `GET /api/dashboard/patient`: Aggregates active medications, today's schedule checklist, 7-day adherence gauge, latest vitals, connected care team, recent recommendations, latest report shortcut, and unread notifications.
-- `GET /api/dashboard/doctor`: Aggregates physician verification status, active patient care roster, pending connection invitations, recent clinical notes, and notification alerts.
-
-### Interactive Components
-- **Patient Dashboard (`Dashboard.jsx`)**: Circular adherence gauge with active streak, today's dosing schedule with one-click taken/skipped actions, vital telemetry preview with Recharts area chart, doctor recommendation cards, and direct PDF report download action.
-- **Doctor Dashboard (`DoctorDashboard.jsx`)**: Patient search filter, credential verification tracker, actionable pending invitation cards (one-click Accept/Reject), and patient care roster linking directly to clinical vitals and notes.
-
----
-
-## Step 26 — Security Hardening & Penetration Defense
-
-MediTrack+ implements defense-in-depth security principles across all layers:
-- **NoSQL Injection Defense**: Custom `mongoSanitize` middleware recursively strips MongoDB operator keys (`$gt`, `$where`, `$ne`, etc.) and dot notation from all requests.
-- **Cryptographic Security**: Passwords hashed with `bcryptjs` (salt work factor 10-12); JWT secret loaded from environment; passwords never returned in responses (`select: false`).
-- **Strict Role-Based Access Control (RBAC)**: `protect` and `authorizeRoles` middlewares prevent horizontal and vertical privilege escalation.
-- **IDOR Protection**: All resource operations strictly query against `req.user.id` or verified `DoctorPatientConnection` permissions.
-- **Security Headers**: `helmet()` secures HTTP headers against XSS, clickjacking, MIME sniffing, and cross-site scripting.
-- **Rate Limiting**: Multi-tiered rate limiters (`apiLimiter` at 200 req/15min, `authLimiter` at 20 req/15min for auth endpoints).
-- **Production Error Masking**: Suppresses stack traces, database internals, and server paths in production mode.
-
----
-
-## Step 27 — Comprehensive Testing & Quality Assurance
-
-MediTrack+ maintains 17 dedicated test suites covering all architectural modules:
-- `medicineModel.test.js` — Medication data validation and boundaries.
-- `scheduleLogic.test.js` — Dynamic on-demand scheduling engine.
-- `reminderEngine.test.js` — Timezone-aware reminder calculation and idempotency.
-- `medicationLog.test.js` — State machine transitions (pending, taken, missed, skipped).
-- `adherence.test.js` — Mathematical adherence formulas and streak calculations.
-- `healthRecord.test.js` — Physiological ranges, partial records, and future date blocking.
-- `healthAnalytics.test.js` — Numerical changes, percentages, and trend analysis.
-- `healthInsight.test.js` — Personal baseline comparisons and non-diagnostic alerts.
-- `notification.test.js` — Notification lifecycle, read/unread states, and preferences.
-- `doctor.test.js` — Physician registration, credential verification, and profile management.
-- `connection.test.js` — Doctor-patient connection requests, approval, and revocation.
-- `doctorHealthAccess.test.js` — 5-layer authorization chain for clinical telemetry access.
-- `doctorNote.test.js` — Segregation of private notes vs patient-visible recommendations.
-- `healthReport.test.js` — Structured telemetry compilation and duplicate prevention.
-- `pdfReport.test.js` — PDFKit binary generation, headers, and access control.
-- `dashboard.test.js` — Aggregated patient and doctor telemetry payloads.
-- `securityHardening.test.js` — NoSQL injection sanitization, JWT tamper checks, and error masking.
-
-Run all test suites with:
 ```bash
+cd backend
 npm run test:all
 ```
 
+### Verification Matrix
+- `medicineModel.test.js` — Prescription validation & boundaries
+- `scheduleLogic.test.js` — Dynamic scheduling engine
+- `reminderEngine.test.js` — Timezone-aware reminder calculations
+- `medicationLog.test.js` — Dose state machine transitions
+- `adherence.test.js` — Mathematical adherence & streak calculations
+- `healthRecord.test.js` — Physiological ranges & future date guards
+- `healthAnalytics.test.js` — Statistical trend calculations
+- `healthInsight.test.js` — Personal baseline comparisons
+- `notification.test.js` — In-app notification delivery
+- `doctor.test.js` — Physician onboarding & credentials
+- `connection.test.js` — Invitation request & approval lifecycle
+- `doctorHealthAccess.test.js` — 5-layer clinical authorization chain
+- `doctorNote.test.js` — Private notes vs patient recommendations
+- `healthReport.test.js` — Structured telemetry compilation
+- `pdfReport.test.js` — PDFKit binary generation & security
+- `dashboard.test.js` — Aggregated dashboard payloads
+- `securityHardening.test.js` — NoSQL sanitization & JWT tamper defense
+
+**Frontend Build Verification**:
+```bash
+cd frontend && npm run build
+```
+
 ---
 
-## Step 28 — UI/UX Design System & Responsive Standards
+## 11. Production Deployment (Render & Atlas)
 
-MediTrack+ is designed with a modern healthcare SaaS aesthetic:
-- **Color Palette**: Deep Slate `#0F172A`, Clean Teal `#0D9488`, Emerald Success `#10B981`, Amber Warning `#F59E0B`, Crimson Danger `#EF4444`, and Slate Background `#F8FAFC`.
-- **Typography & Components**: Modern sans typography with crisp visual hierarchy, accessible contrast ratios, rounded cards (`rounded-2xl` / `rounded-3xl`), subtle border strokes (`border-slate-200/80`), and Lucide icons.
-- **Responsive Layout**: Fluid breakpoints supporting desktop workstations (1920x1080), laptops (1366x768), tablets (768px), and mobile smartphones (375px) with zero horizontal overflow.
+The repository includes a production-ready `render.yaml` blueprint:
+
+1. **MongoDB Atlas**: Create a free M0 cluster, whitelist IP `0.0.0.0/0`, and copy your connection string.
+2. **Render**:
+   - Link your GitHub repository (`akashkbiju/Mern-Medi-Track`).
+   - Create a **New Blueprint Instance** pointing to `meditrack-plus/render.yaml`.
+   - Provide `MONGODB_URI` in the environment prompt.
+   - Render automatically deploys the backend Node.js web service and the static Vite frontend with zero-downtime rolling deploys.
 
 ---
 
-## Step 29 — Production Deployment & Cloud Architecture
+## 12. Academic & Demonstration Guide
 
-MediTrack+ is configured for cloud deployment on **Render** and **MongoDB Atlas**:
-- **Blueprint Configuration**: `render.yaml` defines the backend Node.js web service and frontend static site.
-- **Environment Parity**: `.env.example` templates in both `backend/` and `frontend/`.
-- **Secrets Protection**: Complete `.gitignore` guards preventing `.env`, generated `.pdf` documents, and build artifacts from entering version control.
-- **Automated Health Check**: `GET /api/health` monitors database connection and server uptime for zero-downtime rolling deploys.
+A complete 14-chapter academic MCA documentation report is available at [`docs/MCA_FINAL_DOCUMENTATION.md`](docs/MCA_FINAL_DOCUMENTATION.md), including:
+- System Architecture & Entity-Relationship (ER) Diagrams
+- Use Case & Data Flow Diagrams (DFD)
+- 5–10 Minute Demonstration Script
+- Comprehensive Viva Voce Examination Cheat Sheet
 
+---
 
-
-
-
-
+## License
+Developed as an MCA Final Project. Licensed under the [MIT License](LICENSE).
