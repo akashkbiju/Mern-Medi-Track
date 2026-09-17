@@ -11,7 +11,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   const location = useLocation();
 
   // Show a professional healthcare loading screen while session is being verified
-  if (loading) {
+  if (loading && !isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
         <div className="flex items-center gap-2 mb-4">
@@ -28,7 +28,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && !loading) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 

@@ -4,9 +4,18 @@ import { loginUser, logoutUser, getMe } from '../services/api';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('meditrack_user');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
   const [token, setToken] = useState(() => localStorage.getItem('meditrack_token'));
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => {
+    return Boolean(localStorage.getItem('meditrack_token') && !localStorage.getItem('meditrack_user'));
+  });
 
   const isAuthenticated = Boolean(user && token);
 
@@ -22,9 +31,11 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const response = await getMe();
-      if (response && response.data?.user) {
-        setUser(response.data.user);
+      const userData = response?.data?.user || response?.user;
+      if (userData) {
+        setUser(userData);
         setToken(storedToken);
+        localStorage.setItem('meditrack_user', JSON.stringify(userData));
       } else {
         throw new Error('Invalid user payload');
       }
@@ -49,7 +60,13 @@ export const AuthProvider = ({ children }) => {
    */
   const login = async (credentials) => {
     const response = await loginUser(credentials);
-    const { token: receivedToken, user: receivedUser } = response.data;
+    const payload = response?.data || response;
+    const receivedToken = payload?.token || response?.token;
+    const receivedUser = payload?.user || response?.user;
+
+    if (!receivedToken || !receivedUser) {
+      throw new Error(response?.message || 'Authentication failed: missing token or user data');
+    }
 
     // Securely persist token and user info
     localStorage.setItem('meditrack_token', receivedToken);
