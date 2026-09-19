@@ -24,6 +24,7 @@ import DoctorConnections from './pages/DoctorConnections';
 import DoctorPatientHealth from './pages/DoctorPatientHealth';
 import DoctorRecommendations from './pages/DoctorRecommendations';
 import HealthReports from './pages/HealthReports';
+import AdminDashboard from './pages/AdminDashboard';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { checkApiHealth } from './services/api';
@@ -52,6 +53,18 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/doctor/register" element={<DoctorRegister />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
+
+          {/* Admin Protected Routes */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+          </Route>
 
           {/* Doctor Protected Routes */}
           <Route

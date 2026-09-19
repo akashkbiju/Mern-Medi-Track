@@ -26,6 +26,7 @@ const Sidebar = () => {
   const { unreadCount } = useNotifications();
 
   const isDoctor = user?.role === 'doctor';
+  const isAdmin = user?.role === 'admin';
 
   const patientNavigation = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -50,7 +51,12 @@ const Sidebar = () => {
     { name: 'Notifications', href: '/notifications', icon: Bell, badge: unreadCount },
   ];
 
-  const navigation = isDoctor ? doctorNavigation : patientNavigation;
+  const adminNavigation = [
+    { name: 'Admin Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { name: 'Notifications', href: '/notifications', icon: Bell, badge: unreadCount },
+  ];
+
+  const navigation = isAdmin ? adminNavigation : isDoctor ? doctorNavigation : patientNavigation;
 
   const patientSecondaryNav = [
     { name: 'Profile & Alerts', href: '/profile', icon: User },
@@ -62,7 +68,11 @@ const Sidebar = () => {
     { name: 'Settings', href: '#', icon: Settings },
   ];
 
-  const secondaryNavigation = isDoctor ? doctorSecondaryNav : patientSecondaryNav;
+  const adminSecondaryNav = [
+    { name: 'Admin Settings', href: '#', icon: Settings },
+  ];
+
+  const secondaryNavigation = isAdmin ? adminSecondaryNav : isDoctor ? doctorSecondaryNav : patientSecondaryNav;
 
   return (
     <div className="flex grow flex-col gap-y-5 overflow-y-auto bg-primary px-6 pb-4">

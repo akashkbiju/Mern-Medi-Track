@@ -11,7 +11,9 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated && user) {
-      if (user.role === 'doctor') {
+      if (user.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (user.role === 'doctor') {
         navigate('/doctor/dashboard', { replace: true });
       } else {
         navigate('/dashboard', { replace: true });
@@ -77,7 +79,9 @@ const Login = () => {
       });
 
       // Role-based destination redirect
-      if (loggedInUser?.role === 'doctor') {
+      if (loggedInUser?.role === 'admin') {
+        navigate('/admin/dashboard', { replace: true });
+      } else if (loggedInUser?.role === 'doctor') {
         navigate('/doctor/dashboard', { replace: true });
       } else {
         navigate('/dashboard', { replace: true });
