@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const response = await getMe();
-      const userData = response?.data?.user || response?.user;
+      const userData = response?.data?.user || response?.data?.data?.user || response?.user;
       if (userData) {
         setUser(userData);
         setToken(storedToken);
@@ -59,13 +59,24 @@ export const AuthProvider = ({ children }) => {
    * @param {Object} credentials - { email, password }
    */
   const login = async (credentials) => {
-    const response = await loginUser(credentials);
-    const payload = response?.data || response;
-    const receivedToken = payload?.token || response?.token;
-    const receivedUser = payload?.user || response?.user;
+    const res = await loginUser(credentials);
+
+    // Extract token supporting all response envelope structures
+    const receivedToken =
+      res?.data?.token ||
+      res?.data?.data?.token ||
+      res?.token ||
+      res?.data?.accessToken;
+
+    // Extract user supporting all response envelope structures
+    const receivedUser =
+      res?.data?.user ||
+      res?.data?.data?.user ||
+      res?.user;
 
     if (!receivedToken || !receivedUser) {
-      throw new Error(response?.message || 'Authentication failed: missing token or user data');
+      const msg = res?.data?.message || res?.message || 'Authentication failed: missing token or user data';
+      throw new Error(msg);
     }
 
     // Securely persist token and user info
