@@ -5,6 +5,7 @@ import { env } from './config/env.js';
 import { connectDB } from './config/db.js';
 import { logger } from './utils/logger.js';
 import { startReminderScheduler, stopReminderScheduler } from './services/reminderScheduler.js';
+import { startReportScheduler } from './services/reportScheduler.js';
 
 const startServer = async () => {
   const PORT = env.PORT || 5000;
@@ -19,12 +20,13 @@ const startServer = async () => {
     logger.info(`Health Endpoint: http://localhost:${PORT}/api/health`);
   });
 
-  // 3. When MongoDB connects (immediately or on retry), initialize the reminder scheduler
+  // 3. When MongoDB connects (immediately or on retry), initialize background schedulers
   mongoose.connection.once('open', async () => {
     try {
       await startReminderScheduler();
+      startReportScheduler();
     } catch (err) {
-      logger.error(`[ReminderScheduler] Startup error: ${err.message}`);
+      logger.error(`[Scheduler] Startup error: ${err.message}`);
     }
   });
 
