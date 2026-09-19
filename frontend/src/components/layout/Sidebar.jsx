@@ -15,6 +15,7 @@ import {
   User,
   Users,
   UserCheck,
+  ClipboardList,
   LogOut
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -37,6 +38,7 @@ const Sidebar = () => {
     { name: 'Health Insights', href: '/health-insights', icon: Sparkles },
     { name: 'Find a Doctor', href: '/doctors', icon: Stethoscope },
     { name: 'My Doctors', href: '/my-doctors', icon: UserCheck },
+    { name: 'Recommendations', href: '/doctor-recommendations', icon: ClipboardList },
     { name: 'Notifications', href: '/notifications', icon: Bell, badge: unreadCount },
     { name: 'Health Reports', href: '#', icon: FileText },
   ];

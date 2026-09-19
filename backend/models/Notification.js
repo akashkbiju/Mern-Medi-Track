@@ -16,6 +16,7 @@ const notificationSchema = new mongoose.Schema(
         'doctor_request',
         'doctor_approved',
         'doctor_rejected',
+        'doctor_recommendation',
         'report_ready',
         'system',
       ],

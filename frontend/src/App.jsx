@@ -22,6 +22,7 @@ import DoctorDetails from './pages/DoctorDetails';
 import MyDoctors from './pages/MyDoctors';
 import DoctorConnections from './pages/DoctorConnections';
 import DoctorPatientHealth from './pages/DoctorPatientHealth';
+import DoctorRecommendations from './pages/DoctorRecommendations';
 import DashboardLayout from './layouts/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import { checkApiHealth } from './services/api';
@@ -249,6 +250,17 @@ function App() {
             }
           >
             <Route index element={<MyDoctors />} />
+          </Route>
+
+          <Route
+            path="/doctor-recommendations"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DoctorRecommendations />} />
           </Route>
 
           {/* Shared Protected Notification Route */}

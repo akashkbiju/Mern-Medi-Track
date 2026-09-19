@@ -8,6 +8,7 @@ import {
   Check,
   RotateCcw,
   Trash2,
+  Stethoscope,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -78,6 +79,12 @@ const TYPE_CONFIG = {
     colorClass: 'text-slate-600 bg-slate-100 border-slate-200',
     dotClass: 'bg-slate-400',
     targetRoute: '/dashboard',
+  },
+  doctor_recommendation: {
+    icon: Stethoscope,
+    colorClass: 'text-teal-600 bg-teal-50 border-teal-200',
+    dotClass: 'bg-teal-500',
+    targetRoute: '/doctor-recommendations',
   },
   report_ready: {
     icon: FileText,

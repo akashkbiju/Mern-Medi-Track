@@ -21,6 +21,7 @@ const doctorPatientConnectionSchema = new mongoose.Schema(
       medications: { type: Boolean, default: false },
       healthRecords: { type: Boolean, default: false },
       reports: { type: Boolean, default: false },
+      notes: { type: Boolean, default: true },
     },
     requestedBy: {
       type: mongoose.Schema.Types.ObjectId,

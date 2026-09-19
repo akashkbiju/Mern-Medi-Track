@@ -24,6 +24,7 @@ import {
 import HealthMetricCard from '../components/health/HealthMetricCard';
 import HealthChart from '../components/health/HealthChart';
 import PatientHealthRecords from '../components/doctor/PatientHealthRecords';
+import DoctorNotes from '../components/doctor/DoctorNotes';
 import Button from '../components/ui/Button';
 
 const PERIOD_OPTIONS = [
@@ -521,6 +522,11 @@ export const DoctorPatientHealth = () => {
         onFilterChange={handleRecordFilterChange}
         onResetFilters={handleResetRecordFilters}
       />
+
+      {/* Clinical Notes & Recommendations Section */}
+      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
+        <DoctorNotes patientId={patientId} patientInfo={patientInfo} />
+      </div>
     </div>
   );
 };
