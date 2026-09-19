@@ -46,13 +46,15 @@ app.use(
       if (
         !origin ||
         allowedOrigins.includes(origin) ||
+        origin.startsWith('http://localhost:') ||
+        origin.startsWith('http://127.0.0.1:') ||
         origin.endsWith('.onrender.com') ||
         origin.endsWith('.vercel.app') ||
         origin.endsWith('.netlify.app')
       ) {
         return callback(null, true);
       }
-      return callback(new Error(`Origin ${origin} not allowed by CORS`));
+      return callback(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

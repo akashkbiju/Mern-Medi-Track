@@ -13,10 +13,10 @@ const startServer = async () => {
   // 1. Create HTTP Server
   const server = http.createServer(app);
 
-  // 2. Start Listening immediately on 0.0.0.0 so Render detects open port instantly
-  server.listen(PORT, '0.0.0.0', () => {
+  // 2. Start Listening immediately (dual-stack IPv4 and IPv6)
+  server.listen(PORT, () => {
     logger.info(`MediTrack+ API Server running in ${env.NODE_ENV} mode on port ${PORT}`);
-    logger.info(`Server URL: http://0.0.0.0:${PORT}`);
+    logger.info(`Server URL: http://localhost:${PORT}`);
     logger.info(`Health Endpoint: http://localhost:${PORT}/api/health`);
   });
 
