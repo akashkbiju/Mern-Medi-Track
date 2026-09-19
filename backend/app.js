@@ -6,6 +6,7 @@ import { env } from './config/env.js';
 
 // Middleware
 import { apiLimiter } from './middleware/rateLimitMiddleware.js';
+import { mongoSanitize } from './middleware/sanitizeMiddleware.js';
 import { notFound } from './middleware/notFoundMiddleware.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
 
@@ -63,6 +64,7 @@ app.use(
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser());
+app.use(mongoSanitize);
 
 // 4. Rate Limiting Middleware
 app.use('/api', apiLimiter);
