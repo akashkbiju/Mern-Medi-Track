@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Activity, Mail, Lock, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import Button from '../components/ui/Button';
@@ -6,7 +6,18 @@ import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'doctor') {
+        navigate('/doctor/dashboard', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -67,11 +78,12 @@ const Login = () => {
 
       // Role-based destination redirect
       if (loggedInUser?.role === 'doctor') {
-        navigate('/doctor/dashboard');
+        navigate('/doctor/dashboard', { replace: true });
       } else {
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       }
     } catch (err) {
+      console.error('[Login Error]:', err);
       const responseData = err.response?.data;
       if (err.response?.status === 401) {
         setServerError('Invalid email or password. Please check your credentials.');
@@ -84,7 +96,7 @@ const Login = () => {
       } else if (err.code === 'ERR_NETWORK') {
         setServerError('Unable to reach the server. Please verify your internet or try again later.');
       } else {
-        setServerError('An unexpected error occurred. Please try again.');
+        setServerError(err.message || 'An unexpected error occurred. Please try again.');
       }
     } finally {
       setLoading(false);
