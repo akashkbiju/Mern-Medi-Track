@@ -524,7 +524,7 @@ export const DoctorPatientHealth = () => {
       />
 
       {/* Clinical Notes & Recommendations Section */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs">
+      <div id="clinical-notes" className="bg-white rounded-3xl border border-slate-200/80 p-6 sm:p-8 shadow-xs scroll-mt-20">
         <DoctorNotes patientId={patientId} patientInfo={patientInfo} />
       </div>
     </div>

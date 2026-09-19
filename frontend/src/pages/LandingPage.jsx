@@ -11,7 +11,10 @@ const LandingPage = () => {
           <Activity className="text-secondary" />
           MediTrack+
         </div>
-        <div className="flex gap-4">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" to="/doctor/register" className="hidden sm:inline-flex text-xs font-semibold">
+            Doctor Portal
+          </Button>
           <Button variant="ghost" to="/login">Login</Button>
           <Button variant="primary" to="/register">Get Started</Button>
         </div>
@@ -20,19 +23,24 @@ const LandingPage = () => {
       {/* Hero Section */}
       <main>
         <div className="relative isolate px-6 pt-14 lg:px-8">
-          <div className="mx-auto max-w-2xl py-32 sm:py-48 lg:py-56 text-center">
+          <div className="mx-auto max-w-2xl py-24 sm:py-36 lg:py-44 text-center">
             <h1 className="text-4xl font-bold tracking-tight text-primary sm:text-6xl">
               Smart Medication & Health Management
             </h1>
             <p className="mt-6 text-lg leading-8 text-slate-600">
-              Manage your medicines, monitor your health, track medication adherence, and securely connect with healthcare professionals.
+              Manage your medicines, monitor your biometrics, track medication adherence, and securely connect with healthcare professionals.
             </p>
-            <div className="mt-10 flex items-center justify-center gap-x-6">
-              <Button to="/register" className="px-8 py-3 text-lg">
-                Get Started
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button to="/register" className="w-full sm:w-auto px-8 py-3 text-base font-semibold">
+                Patient Registration
               </Button>
-              <Link to="/login" className="text-sm font-semibold leading-6 text-primary hover:text-primary-light">
-                Login <span aria-hidden="true">→</span>
+              <Button to="/doctor/register" variant="outline" className="w-full sm:w-auto px-6 py-3 text-base font-semibold border-teal-600 text-teal-700 hover:bg-teal-50">
+                Doctor Registration
+              </Button>
+            </div>
+            <div className="mt-4">
+              <Link to="/login" className="text-xs font-semibold text-slate-500 hover:text-slate-800">
+                Already have an account? Sign In →
               </Link>
             </div>
           </div>

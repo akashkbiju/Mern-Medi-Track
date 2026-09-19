@@ -98,6 +98,17 @@ function App() {
             <Route index element={<DoctorPatientHealth />} />
           </Route>
 
+          <Route
+            path="/doctor/patients/:patientId/notes"
+            element={
+              <ProtectedRoute allowedRoles={['doctor']}>
+                <DashboardLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<DoctorPatientHealth />} />
+          </Route>
+
           {/* Patient Protected Dashboard & App Routes */}
           <Route
             path="/dashboard"
