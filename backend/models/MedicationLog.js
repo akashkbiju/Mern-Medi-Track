@@ -38,8 +38,18 @@ const medicationLogSchema = new mongoose.Schema(
 );
 
 // Indexes
-// To fetch a user's logs for a specific day efficiently (e.g. for dashboard)
+// Compound unique index guaranteeing idempotency: a single scheduled dose has exactly one log
+medicationLogSchema.index(
+  { user: 1, medicine: 1, scheduledDate: 1, scheduledTime: 1 },
+  { unique: true }
+);
+
+// To fetch a user's logs for a specific day efficiently (e.g. for daily tracker & dashboard)
 medicationLogSchema.index({ user: 1, scheduledDate: 1 });
+
+// To filter user logs by status (e.g. pending, taken, missed, skipped)
+medicationLogSchema.index({ user: 1, status: 1 });
+
 // To fetch adherence per medicine
 medicationLogSchema.index({ medicine: 1, status: 1 });
 

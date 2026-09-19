@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, 'Please add a password'],
+      select: false,
     },
     role: {
       type: String,
@@ -31,16 +32,67 @@ const userSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
+      enum: ['male', 'female', 'other', 'prefer_not_to_say'],
     },
     profileImage: {
       type: String,
+      default: '',
     },
     emergencyContact: {
+      name: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      relationship: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+      phone: {
+        type: String,
+        trim: true,
+        default: '',
+      },
+    },
+    timezone: {
       type: String,
+      default: 'Asia/Kolkata',
+      trim: true,
     },
     isActive: {
       type: Boolean,
       default: true,
+    },
+    notificationPreferences: {
+      medicationReminders: {
+        type: Boolean,
+        default: true,
+      },
+      missedMedication: {
+        type: Boolean,
+        default: true,
+      },
+      healthAlerts: {
+        type: Boolean,
+        default: true,
+      },
+      doctorUpdates: {
+        type: Boolean,
+        default: true,
+      },
+      reportReady: {
+        type: Boolean,
+        default: true,
+      },
+      email: {
+        type: Boolean,
+        default: false,
+      },
+      push: {
+        type: Boolean,
+        default: false,
+      },
     },
   },
   {
@@ -49,8 +101,6 @@ const userSchema = new mongoose.Schema(
 );
 
 // Indexes
-// Email should be highly optimized since it's used for login
-userSchema.index({ email: 1 });
 // Role index to quickly find doctors or admins
 userSchema.index({ role: 1 });
 

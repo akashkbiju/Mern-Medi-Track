@@ -1,26 +1,65 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
+import { env } from './env.js';
 
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4']);
+} catch (e) {
+  // ignore if dns server setting is restricted
+}
+
+let isConnecting = false;
+
+/**
+ * Connect to MongoDB with graceful error recovery and auto-retry
+ */
 export const connectDB = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+  if (isConnecting) {
+    return null;
+  }
+
   try {
-    if (!process.env.MONGODB_URI) {
-      console.warn("MongoDB connection skipped: MONGODB_URI is not set in the environment variables.");
+    if (!env.MONGODB_URI) {
+      console.warn('[DB WARNING] MongoDB URI is not configured in environment variables.');
       return null;
     }
 
-    if (process.env.MONGODB_URI === 'your_mongodb_connection_string') {
-      console.warn("MongoDB connection skipped: MONGODB_URI is still set to the default placeholder.");
+    if (env.MONGODB_URI === 'your_mongodb_connection_string') {
+      console.warn('[DB WARNING] MongoDB URI is still set to the default placeholder.');
       return null;
     }
 
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    isConnecting = true;
+    console.log('[DB INFO] Connecting to MongoDB Atlas...');
+    const conn = await mongoose.connect(env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
+    isConnecting = false;
+    console.log(`[DB SUCCESS] MongoDB Connected: ${conn.connection.host}`);
     return conn;
   } catch (error) {
-    console.error(`MongoDB Connection Error: ${error.message}`);
-    // Handle the failure gracefully without crashing the app, unless in production
-    if (process.env.NODE_ENV === 'production') {
-      process.exit(1);
-    }
+    isConnecting = false;
+    console.error(`[DB ERROR] MongoDB Connection Failed: ${error.message}`);
+    console.log('[DB INFO] Retrying MongoDB connection in 5 seconds...');
+    setTimeout(connectDB, 5000);
     return null;
   }
 };
+
+/**
+ * Helper to get current connection state string
+ */
+export const getDBConnectionStatus = () => {
+  const states = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting',
+  };
+  return states[mongoose.connection.readyState] || 'unknown';
+};
+
+export default connectDB;
