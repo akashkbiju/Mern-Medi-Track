@@ -4,6 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-background text-slate-900 font-sans antialiased;
+    background-color: #f8fafc;
+    @apply text-slate-900 font-sans antialiased;
   }
 }
