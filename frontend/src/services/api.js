@@ -1,11 +1,28 @@
 import axios from 'axios';
 
+const getApiBaseUrl = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  // When deployed on Render static site (or other hosts), point to the live Render backend
+  if (
+    import.meta.env.PROD ||
+    (typeof window !== 'undefined' &&
+      (window.location.hostname.includes('onrender.com') ||
+        window.location.hostname.includes('vercel.app') ||
+        window.location.hostname.includes('netlify.app')))
+  ) {
+    return 'https://mern-medi-track-1.onrender.com/api';
+  }
+  return '/api';
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000,
+  timeout: 30000,
   withCredentials: true,
 });
 
