@@ -13,7 +13,8 @@
     "test:log": "node tests/medicationLog.test.js",
     "test:adherence": "node tests/adherence.test.js",
     "test:health": "node tests/healthRecord.test.js",
-    "test:doctorHealth": "node tests/doctorHealthAccess.test.js"
+    "test:doctorHealth": "node tests/doctorHealthAccess.test.js",
+    "test:all": "node tests/runAllTests.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
